@@ -231,36 +231,30 @@ public class BondReceiverScript extends Script {
     private void handleApplyingMembership() {
         currentStatus = "Applying membership...";
         
-        // Look for membership interface
-        // Widget 398 is the bond redemption interface
-        
-        // Click "14 days of membership" option (typically widget 398, 18)
-        Widget membershipOption = Rs2Widget.getWidget(398, 18);
-        if (membershipOption != null && !membershipOption.isHidden()) {
-            Microbot.getMouse().click(membershipOption.getBounds());
-            sleep(800);
-        }
-        
-        // Click "Confirm" button
-        Widget confirmButton = Rs2Widget.getWidget(398, 20);
-        if (confirmButton != null && !confirmButton.isHidden()) {
-            Microbot.getMouse().click(confirmButton.getBounds());
-            sleep(1200);
-            
-            log.info("Membership applied successfully!");
+        // If bond is gone from inventory, membership was applied
+        if (!Rs2Inventory.hasItem("Old school bond")) {
+            log.info("Bond consumed - membership applied!");
             membershipApplied = true;
             BondQueue.setStatus("COMPLETE");
             transitionTo(State.LOGGING_OUT);
             return;
         }
         
-        // If bond is gone from inventory, membership was applied
-        if (!Rs2Inventory.hasItem("Old school bond")) {
-            log.info("Bond consumed - membership likely applied!");
-            membershipApplied = true;
-            BondQueue.setStatus("COMPLETE");
-            transitionTo(State.LOGGING_OUT);
+        // Look for "14 days" text in widgets and click it
+        if (Rs2Widget.clickWidget("14 days")) {
+            log.info("Clicked 14 days membership option");
+            sleep(1500);
+            return;
         }
+        
+        // Alternative: Try clicking widget with "membership" text that contains "14"
+        if (Rs2Widget.clickWidget("14 days membership")) {
+            log.info("Clicked 14 days membership (full text)");
+            sleep(1500);
+            return;
+        }
+        
+        log.debug("Waiting for membership interface or bond consumption...");
     }
     
     private void handleLoggingOut() {
