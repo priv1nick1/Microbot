@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.nick1privatelibrary;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Skill;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -18,11 +19,12 @@ import java.util.concurrent.TimeUnit;
 public class nICK1PrivateLibraryScript extends Script {
     public static double version = 1.0;
     
-    // Library locations
-    private static final WorldPoint LIBRARY_ENTRANCE = new WorldPoint(1639, 3632, 0);
-    private static final WorldPoint GROUND_FLOOR_CENTER = new WorldPoint(1639, 3632, 0);
-    private static final WorldPoint FIRST_FLOOR_CENTER = new WorldPoint(1639, 3632, 1);
-    private static final WorldPoint SECOND_FLOOR_CENTER = new WorldPoint(1639, 3632, 2);
+    // Library locations - Corrected coordinates
+    private static final WorldArea LIBRARY_AREA = new WorldArea(1622, 3798, 21, 20, 0);
+    private static final WorldPoint LIBRARY_ENTRANCE = new WorldPoint(1632, 3808, 0); // Center of the area
+    private static final WorldPoint GROUND_FLOOR_CENTER = new WorldPoint(1632, 3808, 0);
+    private static final WorldPoint FIRST_FLOOR_CENTER = new WorldPoint(1632, 3808, 1);
+    private static final WorldPoint SECOND_FLOOR_CENTER = new WorldPoint(1632, 3808, 2);
     
     // Stats tracking (public static so overlay can access)
     public static long startTime;
@@ -251,9 +253,8 @@ public class nICK1PrivateLibraryScript extends Script {
     }
     
     private boolean isInLibrary(WorldPoint location) {
-        // Check if we're in the library area (rough bounds)
-        return location.getX() >= 1600 && location.getX() <= 1680 &&
-               location.getY() >= 3600 && location.getY() <= 3660;
+        // Check if we're in the library area using the correct WorldArea
+        return LIBRARY_AREA.contains(location);
     }
     
     private WorldPoint findNearestBookcase() {
