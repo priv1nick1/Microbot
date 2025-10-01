@@ -7,6 +7,7 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
+import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 
 import java.util.concurrent.TimeUnit;
 
@@ -47,6 +48,12 @@ public class BondReceiverScript extends Script {
                 if (!Microbot.isLoggedIn()) {
                     currentStatus = "Not logged in";
                     return;
+                }
+                
+                // Handle login prompts (space bar to continue, etc.)
+                if (Rs2Dialogue.hasContinue()) {
+                    Rs2Dialogue.clickContinue();
+                    sleep(600);
                 }
                 
                 // Get character name
@@ -121,13 +128,28 @@ public class BondReceiverScript extends Script {
     private void handleWaitingForBondTrade() {
         currentStatus = "Waiting for bond trade...";
         
-        // Check if trade window is open or if bond appeared in inventory
+        // Check if bond appeared in inventory (already accepted)
         if (Rs2Inventory.hasItem("Old school bond")) {
             log.info("Bond received in inventory!");
             bondReceived = true;
             BondQueue.setStatus("BOND_RECEIVED");
             transitionTo(State.USING_BOND);
             return;
+        }
+        
+        // Check for bond offer dialogue: "X is offering to give you a bond."
+        if (Rs2Dialogue.isInDialogue()) {
+            String dialogueText = Rs2Dialogue.getDialogueText();
+            if (dialogueText != null && dialogueText.toLowerCase().contains("offering to give you a bond")) {
+                log.info("Bond offer dialogue detected! Clicking Accept it...");
+                
+                if (Rs2Dialogue.clickOption("Accept it")) {
+                    log.info("Clicked Accept it on bond offer!");
+                    sleep(1200);
+                    // Bond should appear in inventory soon
+                    return;
+                }
+            }
         }
         
         // Check for trade screen (widget 334 is trade screen)
@@ -142,7 +164,7 @@ public class BondReceiverScript extends Script {
         String status = BondQueue.getStatus();
         if (status.equals("BOND_OFFERED")) {
             // Master has offered the bond, look for trade request
-            currentStatus = "Looking for trade request...";
+            currentStatus = "Looking for bond offer...";
         }
     }
     

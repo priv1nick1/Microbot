@@ -5,7 +5,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.dialogue.Rs2Dialogue;
+import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -218,10 +218,6 @@ public class BondMasterScript extends Script {
                 BondQueue.setStatus("BOND_OFFERED");
                 sleep(1200);
                 transitionTo(State.WAITING_FOR_ACCEPTANCE);
-            } else {
-                // Try alternative - just press 1 (spacebar for continue or 1 for first option)
-                Rs2Dialogue.keyPress('1');
-                sleep(800);
             }
         } else {
             log.debug("Waiting for gift dialogue to appear...");
