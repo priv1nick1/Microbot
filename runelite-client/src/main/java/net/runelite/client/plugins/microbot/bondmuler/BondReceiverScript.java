@@ -8,6 +8,9 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
+import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
+
+import java.awt.event.KeyEvent;
 
 import java.util.concurrent.TimeUnit;
 
@@ -137,35 +140,16 @@ public class BondReceiverScript extends Script {
             return;
         }
         
-        // Check for bond offer dialogue: "X is offering to give you a bond."
-        if (Rs2Dialogue.isInDialogue()) {
-            String dialogueText = Rs2Dialogue.getDialogueText();
-            
-            // Bond offer dialogue detected
-            if (dialogueText != null && dialogueText.toLowerCase().contains("offering to give you a bond")) {
-                log.info("Bond offer dialogue detected!");
+        // Simple detection: if we see "Accept" in dialogue options, press 1
+        if (Rs2Dialogue.hasSelectAnOption()) {
+            // Check if "Accept" option exists
+            if (Rs2Dialogue.hasDialogueOption("Accept")) {
+                log.info("Bond offer detected! Pressing 1 to accept...");
                 currentStatus = "Accepting bond offer...";
                 
-                // Wait for the options to appear
-                if (Rs2Dialogue.hasSelectAnOption()) {
-                    log.info("Options available. Clicking Accept it...");
-                    
-                    // Try clicking "Accept it"
-                    boolean clicked = Rs2Dialogue.clickOption("Accept");
-                    if (clicked) {
-                        log.info("Clicked Accept on bond offer!");
-                        sleep(1500);
-                        return;
-                    } else {
-                        // Fallback: Try keyboard option 1
-                        log.info("Trying keyboard option 1...");
-                        Rs2Dialogue.keyPressForDialogueOption(1);
-                        sleep(1500);
-                        return;
-                    }
-                } else {
-                    log.debug("Waiting for dialogue options to appear...");
-                }
+                // Press 1 to select first option (Accept it.)
+                Rs2Keyboard.keyPress(KeyEvent.VK_1);
+                sleep(1500);
                 return;
             }
         }
