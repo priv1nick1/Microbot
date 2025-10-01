@@ -81,22 +81,30 @@ public class BondReceiverScript extends Script {
                 
                 if (!super.run()) return;
                 
+                // State machine - LOGIN_NEXT_ACCOUNT must run even when not logged in!
+                switch (currentState) {
+                    case LOGIN_NEXT_ACCOUNT:
+                        handleLoginNextAccount();
+                        return; // Don't continue to other checks
+                    case COMPLETE:
+                        handleComplete();
+                        return; // Don't continue
+                }
+                
+                // For all other states, we must be logged in
                 if (!Microbot.isLoggedIn()) {
-                    currentStatus = "Not logged in";
+                    currentStatus = "Not logged in - waiting...";
                     return;
                 }
                 
-                // Get character name
+                // Get character name once logged in
                 if (myCharacterName.isEmpty() && Rs2Player.getLocalPlayer() != null) {
                     myCharacterName = Rs2Player.getLocalPlayer().getName();
                     log.info("Character name detected: {}", myCharacterName);
                 }
                 
-                // State machine
+                // Continue with logged-in states
                 switch (currentState) {
-                    case LOGIN_NEXT_ACCOUNT:
-                        handleLoginNextAccount();
-                        break;
                     case WAITING_FOR_TURN:
                         handleWaitingForTurn();
                         break;
@@ -114,9 +122,6 @@ public class BondReceiverScript extends Script {
                         break;
                     case LOGGING_OUT:
                         handleLoggingOut();
-                        break;
-                    case COMPLETE:
-                        handleComplete();
                         break;
                 }
                 
