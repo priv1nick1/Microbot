@@ -376,6 +376,12 @@ public class BondReceiverScript extends Script {
         if (!Microbot.isLoggedIn()) {
             log.info("Logged out successfully!");
             currentAccountIndex++; // Move to next account
+            
+            // CRITICAL: Unpause scripts so login can work!
+            Microbot.pauseAllScripts.set(false);
+            sleep(1000);
+            
+            log.info("Ready for next account ({}/{})", currentAccountIndex + 1, accounts.size());
             transitionTo(State.LOGIN_NEXT_ACCOUNT);
         } else {
             log.debug("Still logging out...");
