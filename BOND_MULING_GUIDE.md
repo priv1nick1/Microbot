@@ -15,16 +15,17 @@ No more manual clicking for hours! ✨
 Create `ironman-accounts.txt` in your Microbot folder:
 
 ```
-ironman1@gmail.com:password123:IronMan1
-ironman2@gmail.com:password456:MyIronman
-ironman3@gmail.com:password789:HC Iron
+ironman1@gmail.com:password123
+ironman2@gmail.com:password456
+ironman3@gmail.com:password789
 ```
 
-**Format:** `email:password:character_name` (one per line)
+**Format:** `email:password` (SAME as your main accounts.txt!)
 
-**Important:**
-- Character name must match EXACTLY (case-sensitive!)
-- This file is in `.gitignore` - it will NOT be uploaded to GitHub ✅
+**Easy Mode:**
+- ✅ Just copy-paste from your existing accounts list!
+- ✅ Character names detected automatically on login!
+- ✅ This file is in `.gitignore` - will NOT upload to GitHub!
 
 ---
 

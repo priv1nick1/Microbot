@@ -118,21 +118,33 @@ public class BondMasterScript extends Script {
         }
         
         BondQueue.IronmanAccount currentAccount = accounts.get(currentAccountIndex);
-        currentStatus = "Waiting for: " + currentAccount.characterName;
+        
+        // Check if character name has been set by the receiver
+        String currentCharName = BondQueue.getCurrentAccount();
+        if (currentCharName != null && !currentCharName.isEmpty()) {
+            // Update our record with the actual character name
+            if (currentAccount.characterName == null || currentAccount.characterName.isEmpty()) {
+                currentAccount.characterName = currentCharName;
+                log.info("Character name detected: {}", currentCharName);
+            }
+        }
+        
+        currentStatus = "Waiting for: " + (currentAccount.characterName != null ? currentAccount.characterName : currentAccount.email);
         
         // Update queue status
-        BondQueue.setCurrentAccount(currentAccount.characterName);
         BondQueue.setStatus("WAITING_FOR_IRONMAN");
         
         // Check if ironman is logged in (nearby)
-        boolean ironmanNearby = Rs2Player.getPlayers(p -> 
-            p.getName() != null && 
-            p.getName().equalsIgnoreCase(currentAccount.characterName)
-        ).findFirst().isPresent();
-        
-        if (ironmanNearby) {
-            log.info("Ironman detected: {}", currentAccount.characterName);
-            transitionTo(State.USING_BOND);
+        if (currentAccount.characterName != null && !currentAccount.characterName.isEmpty()) {
+            boolean ironmanNearby = Rs2Player.getPlayers(p -> 
+                p.getName() != null && 
+                p.getName().equalsIgnoreCase(currentAccount.characterName)
+            ).findFirst().isPresent();
+            
+            if (ironmanNearby) {
+                log.info("Ironman detected: {}", currentAccount.characterName);
+                transitionTo(State.USING_BOND);
+            }
         }
     }
     

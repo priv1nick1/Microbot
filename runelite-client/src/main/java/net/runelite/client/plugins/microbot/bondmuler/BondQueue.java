@@ -67,16 +67,15 @@ public class BondQueue {
                     continue;
                 }
                 
-                // Parse: email:password:character_name
+                // Parse: email:password (character name detected on login)
                 String[] parts = line.split(":");
-                if (parts.length >= 3) {
+                if (parts.length >= 2) {
                     String email = parts[0].trim();
                     String password = parts[1].trim();
-                    String characterName = parts[2].trim();
                     
-                    accounts.add(new IronmanAccount(email, password, characterName));
+                    accounts.add(new IronmanAccount(email, password, null));
                 } else {
-                    log.warn("Invalid line format (expected email:password:character_name): {}", line);
+                    log.warn("Invalid line format (expected email:password): {}", line);
                 }
             }
             
@@ -162,7 +161,7 @@ public class BondQueue {
     public static class IronmanAccount {
         public final String email;
         public final String password;
-        public final String characterName;
+        public String characterName; // Detected on login
         
         public IronmanAccount(String email, String password, String characterName) {
             this.email = email;
@@ -172,7 +171,7 @@ public class BondQueue {
         
         @Override
         public String toString() {
-            return characterName + " (" + email + ")";
+            return (characterName != null ? characterName : email) + " (" + email + ")";
         }
     }
 }

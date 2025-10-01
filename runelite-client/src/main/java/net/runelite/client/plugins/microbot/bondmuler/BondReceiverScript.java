@@ -99,13 +99,21 @@ public class BondReceiverScript extends Script {
     private void handleWaitingForTurn() {
         currentStatus = "Waiting for turn...";
         
-        // Check if it's our turn
-        String currentAccount = BondQueue.getCurrentAccount();
-        String status = BondQueue.getStatus();
+        // Announce our character name to the master
+        if (myCharacterName != null && !myCharacterName.isEmpty()) {
+            String currentAccount = BondQueue.getCurrentAccount();
+            
+            // If master is waiting and we haven't announced yet, announce ourselves
+            if ((currentAccount == null || currentAccount.isEmpty() || !currentAccount.equals(myCharacterName))) {
+                BondQueue.setCurrentAccount(myCharacterName);
+                log.info("Announced character name to master: {}", myCharacterName);
+            }
+        }
         
-        if (currentAccount.equalsIgnoreCase(myCharacterName) && 
-            status.equals("WAITING_FOR_IRONMAN")) {
-            log.info("It's our turn! Master is ready.");
+        // Check if master is ready for us
+        String status = BondQueue.getStatus();
+        if (status.equals("WAITING_FOR_IRONMAN")) {
+            log.info("Master is ready! Moving to trade phase.");
             transitionTo(State.WAITING_FOR_BOND_TRADE);
         }
     }
