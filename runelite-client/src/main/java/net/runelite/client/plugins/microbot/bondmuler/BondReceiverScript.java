@@ -262,29 +262,30 @@ public class BondReceiverScript extends Script {
             sleep(1500);
         }
         
-        // Step 2: Click the exact Accept button widget (289:7)
-        log.info("Looking for Accept button (widget 289:7)...");
+        // Step 2: HARDCODED CLICK - Accept button is always at same position
+        log.info("Clicking Accept button at hardcoded coordinates (330, 255)...");
         currentStatus = "Clicking Accept button...";
         
-        // Get the exact Accept button widget (289:7)
+        // Try widget first
         Widget acceptButton = Rs2Widget.getWidget(289, 7);
         if (acceptButton != null && !acceptButton.isHidden()) {
-            log.info("Accept button found! Clicking it...");
-            
-            // Click it directly using bounds
+            log.info("Accept button widget found! Clicking bounds...");
             Microbot.getMouse().click(acceptButton.getBounds());
             sleep(1200);
-            
-            // Check if bond is gone (success!)
-            if (!Rs2Inventory.hasItem("Old school bond")) {
-                log.info("SUCCESS! Bond consumed!");
-                membershipApplied = true;
-                BondQueue.setStatus("COMPLETE");
-                transitionTo(State.LOGGING_OUT);
-                return;
-            }
         } else {
-            log.debug("Accept button (289:7) not found or hidden, will retry...");
+            // FALLBACK: Just click the hardcoded coordinates (center of button at x=303, y=241)
+            log.info("Widget not found, clicking hardcoded position (330, 255)...");
+            Microbot.getMouse().click(new java.awt.Point(330, 255));
+            sleep(1200);
+        }
+        
+        // Check if bond is gone (success!)
+        if (!Rs2Inventory.hasItem("Old school bond")) {
+            log.info("SUCCESS! Bond consumed!");
+            membershipApplied = true;
+            BondQueue.setStatus("COMPLETE");
+            transitionTo(State.LOGGING_OUT);
+            return;
         }
         
         log.debug("Waiting for membership interface...");
