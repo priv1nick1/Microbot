@@ -10,9 +10,10 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
+import net.runelite.client.plugins.microbot.util.security.Login;
 
 import java.awt.event.KeyEvent;
-
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -24,7 +25,12 @@ public class BondReceiverScript extends Script {
     public static boolean bondReceived = false;
     public static boolean membershipApplied = false;
     
+    // Account management
+    private List<BondQueue.IronmanAccount> accounts;
+    private int currentAccountIndex = 0;
+    
     private enum State {
+        LOGIN_NEXT_ACCOUNT,
         WAITING_FOR_TURN,
         WAITING_FOR_BOND_TRADE,
         ACCEPTING_BOND,
@@ -34,7 +40,7 @@ public class BondReceiverScript extends Script {
         COMPLETE
     }
     
-    private State currentState = State.WAITING_FOR_TURN;
+    private State currentState = State.LOGIN_NEXT_ACCOUNT;
     private long stateStartTime = 0;
     private static final int TIMEOUT_MS = 120000; // 2 minute timeout
     private String myCharacterName = "";
@@ -44,6 +50,11 @@ public class BondReceiverScript extends Script {
         
         // Initialize bond queue system
         BondQueue.initialize();
+        
+        // Load ironman accounts from file
+        String accountsFilePath = System.getProperty("user.dir") + "/ironman-accounts.txt";
+        accounts = BondQueue.loadIronmanAccounts(accountsFilePath);
+        log.info("Loaded {} ironman accounts for auto-login", accounts.size());
         
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -83,6 +94,9 @@ public class BondReceiverScript extends Script {
                 
                 // State machine
                 switch (currentState) {
+                    case LOGIN_NEXT_ACCOUNT:
+                        handleLoginNextAccount();
+                        break;
                     case WAITING_FOR_TURN:
                         handleWaitingForTurn();
                         break;
@@ -287,6 +301,43 @@ public class BondReceiverScript extends Script {
         log.debug("Waiting for membership interface...");
     }
     
+    private void handleLoginNextAccount() {
+        // Check if already logged in
+        if (Microbot.isLoggedIn()) {
+            log.info("Already logged in, proceeding to bond receiving...");
+            transitionTo(State.WAITING_FOR_TURN);
+            return;
+        }
+        
+        // Check if we have more accounts to process
+        if (currentAccountIndex >= accounts.size()) {
+            log.info("All accounts processed!");
+            currentStatus = "All accounts complete!";
+            transitionTo(State.COMPLETE);
+            return;
+        }
+        
+        BondQueue.IronmanAccount account = accounts.get(currentAccountIndex);
+        currentStatus = "Logging in account " + (currentAccountIndex + 1) + "/" + accounts.size();
+        log.info("Logging in: {} ({}/{})", account.email, currentAccountIndex + 1, accounts.size());
+        
+        // Use Microbot's Login class to login
+        new Login(account.email, account.password);
+        sleep(5000); // Wait for login to complete
+        
+        // Check if login succeeded
+        if (Microbot.isLoggedIn()) {
+            log.info("Login successful!");
+            // Reset flags for new account
+            bondReceived = false;
+            membershipApplied = false;
+            myCharacterName = "";
+            transitionTo(State.WAITING_FOR_TURN);
+        } else {
+            log.warn("Login failed, will retry...");
+        }
+    }
+    
     private void handleLoggingOut() {
         currentStatus = "Logging out...";
         
@@ -298,12 +349,19 @@ public class BondReceiverScript extends Script {
         Rs2Player.logout();
         sleep(3000);
         
-        transitionTo(State.COMPLETE);
+        // Check if logged out
+        if (!Microbot.isLoggedIn()) {
+            log.info("Logged out successfully!");
+            currentAccountIndex++; // Move to next account
+            transitionTo(State.LOGIN_NEXT_ACCOUNT);
+        } else {
+            log.debug("Still logging out...");
+        }
     }
     
     private void handleComplete() {
-        currentStatus = "Complete!";
-        log.info("Bond receiver complete. Membership applied: {}", membershipApplied);
+        currentStatus = "All accounts complete!";
+        log.info("Bond receiver complete. Processed {} accounts.", currentAccountIndex);
     }
     
     private void transitionTo(State newState) {
