@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.bondmuler;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Point;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -275,7 +276,7 @@ public class BondReceiverScript extends Script {
         } else {
             // FALLBACK: Just click the hardcoded coordinates (center of button at x=303, y=241)
             log.info("Widget not found, clicking hardcoded position (330, 255)...");
-            Microbot.getMouse().click(new java.awt.Point(330, 255));
+            Microbot.getMouse().click(new net.runelite.api.Point(330, 255));
             sleep(1200);
         }
         
