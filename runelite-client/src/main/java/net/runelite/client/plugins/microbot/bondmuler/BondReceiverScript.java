@@ -48,12 +48,16 @@ public class BondReceiverScript extends Script {
             if (!super.run()) return;
             
             try {
-                // PRIORITY 1: Handle login prompts FIRST (before anything else!)
+                // PRIORITY 1: Handle ANY dialogue with continue - SPAM IT!
                 if (Rs2Dialogue.hasContinue()) {
-                    log.info("Continue dialogue detected - clicking...");
+                    log.info("CONTINUE DETECTED - CLICKING SPACE!");
                     Rs2Dialogue.clickContinue();
+                    sleep(300);
+                    Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
+                    sleep(300);
+                    Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_ENTER);
                     sleep(600);
-                    return; // Exit and retry next cycle
+                    return; // Exit and retry
                 }
                 
                 if (!Microbot.isLoggedIn()) {
@@ -249,10 +253,27 @@ public class BondReceiverScript extends Script {
             return;
         }
         
-        // Step 2: Click "Accept" on the confirmation popup
-        if (Rs2Widget.clickWidget("Accept")) {
-            log.info("Clicked Accept on membership confirmation");
+        // Step 2: Try EVERYTHING to click Accept button
+        if (Rs2Widget.hasWidget("Accept")) {
+            log.info("ACCEPT BUTTON FOUND! Trying all methods...");
+            
+            // Method 1: Click widget with "Accept" text
+            Rs2Widget.clickWidget("Accept");
+            sleep(300);
+            
+            // Method 2: Press ENTER key
+            Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_ENTER);
+            sleep(300);
+            
+            // Method 3: Press SPACE key
+            Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
+            sleep(300);
+            
+            // Method 4: Type "1"
+            Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_1);
             sleep(1500);
+            
+            log.info("All accept methods attempted!");
             return;
         }
         
