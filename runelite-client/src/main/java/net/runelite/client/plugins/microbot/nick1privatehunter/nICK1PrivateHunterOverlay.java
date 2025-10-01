@@ -25,7 +25,7 @@ public class nICK1PrivateHunterOverlay extends OverlayPanel {
     @Override
     public Dimension render(Graphics2D graphics) {
         try {
-            panelComponent.setPreferredSize(new Dimension(220, 170));
+            panelComponent.setPreferredSize(new Dimension(220, 190));
             
             // Title
             panelComponent.getChildren().add(TitleComponent.builder()
@@ -82,11 +82,32 @@ public class nICK1PrivateHunterOverlay extends OverlayPanel {
                     .right(nICK1PrivateHunterScript.currentStatus)
                     .rightColor(Color.WHITE)
                     .build());
+            
+            // Calculate and display runtime
+            long runtimeMillis = System.currentTimeMillis() - nICK1PrivateHunterScript.startTime;
+            String runtimeFormatted = formatRuntime(runtimeMillis);
+            
+            panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Time Running:")
+                    .right(runtimeFormatted)
+                    .rightColor(Color.ORANGE)
+                    .build());
 
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
         return super.render(graphics);
+    }
+    
+    private String formatRuntime(long millis) {
+        long seconds = millis / 1000;
+        long minutes = seconds / 60;
+        long hours = minutes / 60;
+        
+        seconds = seconds % 60;
+        minutes = minutes % 60;
+        
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
     
     private String calculateTimeToLevel(int currentLevel, int expPerHour, int targetLevel) {
