@@ -269,27 +269,39 @@ public class BondReceiverScript extends Script {
             return;
         }
         
-        // Step 2: Try EVERYTHING to click Accept button
-        if (Rs2Widget.hasWidget("Accept")) {
-            log.info("ACCEPT BUTTON FOUND! Trying all methods...");
+        // Step 2: NUCLEAR ACCEPT - Try EVERYTHING multiple times!
+        if (Rs2Widget.hasWidget("Accept") || Rs2Widget.hasWidget("ccept")) {
+            log.info("ACCEPT BUTTON DETECTED! GOING NUCLEAR...");
+            currentStatus = "CLICKING ACCEPT BUTTON!";
             
-            // Method 1: Click widget with "Accept" text
-            Rs2Widget.clickWidget("Accept");
-            sleep(300);
+            // SPAM IT 3 TIMES!
+            for (int attempt = 1; attempt <= 3; attempt++) {
+                log.info("Accept attempt {}/3", attempt);
+                
+                // Method 1: Click widget with "Accept" text (partial match)
+                Rs2Widget.clickWidget("ccept");
+                sleep(200);
+                
+                // Method 2: Click exact "Accept" text
+                Rs2Widget.clickWidget("Accept");
+                sleep(200);
+                
+                // Method 3: Press SPACE key
+                Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
+                sleep(200);
+                
+                // Method 4: Press ENTER key
+                Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_ENTER);
+                sleep(200);
+                
+                // Check if bond is gone (success!)
+                if (!Rs2Inventory.hasItem("Old school bond")) {
+                    log.info("SUCCESS! Bond consumed after attempt {}", attempt);
+                    return;
+                }
+            }
             
-            // Method 2: Press ENTER key
-            Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_ENTER);
-            sleep(300);
-            
-            // Method 3: Press SPACE key
-            Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
-            sleep(300);
-            
-            // Method 4: Type "1"
-            Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_1);
-            sleep(1500);
-            
-            log.info("All accept methods attempted!");
+            log.info("All accept spam attempts complete!");
             return;
         }
         
