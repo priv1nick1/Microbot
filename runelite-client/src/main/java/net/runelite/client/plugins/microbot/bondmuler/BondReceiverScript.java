@@ -10,7 +10,6 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.security.Login;
 
 import java.awt.event.KeyEvent;
 import java.util.List;
@@ -326,8 +325,15 @@ public class BondReceiverScript extends Script {
         currentStatus = "Logging in account " + (currentAccountIndex + 1) + "/" + accounts.size();
         log.info("Logging in: {} ({}/{})", account.email, currentAccountIndex + 1, accounts.size());
         
-        // Use Microbot's Login class to login
-        new Login(account.email, account.password);
+        // Set credentials directly (plain text password)
+        Microbot.getClient().setUsername(account.email);
+        Microbot.getClient().setPassword(account.password);
+        log.info("Credentials set, pressing enter to login...");
+        
+        // Press enter to login
+        Rs2Keyboard.keyPress(KeyEvent.VK_ENTER);
+        sleep(600);
+        Rs2Keyboard.keyPress(KeyEvent.VK_ENTER);
         sleep(5000); // Wait for login to complete
         
         // Check if login succeeded
