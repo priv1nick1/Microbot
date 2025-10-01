@@ -45,36 +45,29 @@ public class BondReceiverScript extends Script {
         BondQueue.initialize();
         
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            if (!super.run()) return;
-            
             try {
-                // PRIORITY 1: Handle ANY continue dialogue - SPAM EVERYTHING!
-                if (Rs2Dialogue.hasContinue() || Rs2Widget.hasWidget("Click here to continue")) {
-                    log.info("CONTINUE DETECTED - SPAMMING ALL KEYS!");
+                // ABSOLUTE PRIORITY: Handle continue dialogues BEFORE ANYTHING ELSE
+                // This MUST run before super.run() or isLoggedIn() checks!
+                if (Rs2Dialogue.hasContinue() || Rs2Widget.hasWidget("Click here to continue") || Rs2Widget.hasWidget("continue")) {
+                    log.info("CONTINUE DIALOGUE DETECTED - SPAMMING SPACE!");
                     
-                    // Method 1: Rs2Dialogue continue
-                    Rs2Dialogue.clickContinue();
-                    sleep(200);
-                    
-                    // Method 2: Click the widget
-                    Rs2Widget.clickWidget("Click here to continue");
-                    sleep(200);
-                    
-                    // Method 3: SPACE
+                    // Just spam SPACE - the most reliable method
                     Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
-                    sleep(200);
+                    sleep(100);
+                    Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
+                    sleep(100);
+                    Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
+                    sleep(100);
                     
-                    // Method 4: ENTER
-                    Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_ENTER);
-                    sleep(200);
+                    // Also try clicking
+                    Rs2Dialogue.clickContinue();
+                    sleep(100);
                     
-                    // Method 5: ESC (close any interface)
-                    Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_ESCAPE);
-                    sleep(600);
-                    
-                    log.info("Continue spam complete!");
-                    return; // Exit and retry
+                    log.info("Spammed space for continue!");
+                    return; // Exit immediately and retry next tick
                 }
+                
+                if (!super.run()) return;
                 
                 if (!Microbot.isLoggedIn()) {
                     currentStatus = "Not logged in";
@@ -269,41 +262,26 @@ public class BondReceiverScript extends Script {
             return;
         }
         
-        // Step 2: NUCLEAR ACCEPT - Try EVERYTHING multiple times!
-        if (Rs2Widget.hasWidget("Accept") || Rs2Widget.hasWidget("ccept")) {
-            log.info("ACCEPT BUTTON DETECTED! GOING NUCLEAR...");
-            currentStatus = "CLICKING ACCEPT BUTTON!";
+        // Step 2: ULTRA AGGRESSIVE ACCEPT - Just spam SPACE until bond is gone!
+        log.info("Looking for Accept button or bond confirmation...");
+        currentStatus = "Confirming membership...";
+        
+        // Just SPAM SPACE - it works for everything!
+        for (int i = 0; i < 5; i++) {
+            Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
+            sleep(300);
             
-            // SPAM IT 3 TIMES!
-            for (int attempt = 1; attempt <= 3; attempt++) {
-                log.info("Accept attempt {}/3", attempt);
-                
-                // Method 1: Click widget with "Accept" text (partial match)
-                Rs2Widget.clickWidget("ccept");
-                sleep(200);
-                
-                // Method 2: Click exact "Accept" text
-                Rs2Widget.clickWidget("Accept");
-                sleep(200);
-                
-                // Method 3: Press SPACE key
-                Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
-                sleep(200);
-                
-                // Method 4: Press ENTER key
-                Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_ENTER);
-                sleep(200);
-                
-                // Check if bond is gone (success!)
-                if (!Rs2Inventory.hasItem("Old school bond")) {
-                    log.info("SUCCESS! Bond consumed after attempt {}", attempt);
-                    return;
-                }
+            // Check if bond is gone (success!)
+            if (!Rs2Inventory.hasItem("Old school bond")) {
+                log.info("SUCCESS! Bond consumed!");
+                membershipApplied = true;
+                BondQueue.setStatus("COMPLETE");
+                transitionTo(State.LOGGING_OUT);
+                return;
             }
-            
-            log.info("All accept spam attempts complete!");
-            return;
         }
+        
+        log.debug("Still waiting for bond to be consumed...");
         
         log.debug("Waiting for membership interface...");
     }
