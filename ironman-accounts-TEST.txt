@@ -1,0 +1,13 @@
+# TEST FILE - Bond Muling System
+# Copy this and rename to ironman-accounts.txt when ready to test
+
+# Format: email:password (one per line)
+# Add 2-3 test accounts below:
+
+# Example (replace with your real accounts):
+# testironman1@gmail.com:password123
+# testironman2@gmail.com:password456
+
+# Your test accounts:
+
+

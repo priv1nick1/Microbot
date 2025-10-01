@@ -1,6 +1,8 @@
-tree 1993f1ed274d2039b5b0d7722700a773dbde1a2a
-parent b43ebd82ea25f7a7ee85b57e4cca720c52435867
-author SoyChai <soychai@tuta.io> 1524878473 +1000
-committer SoyChai <soychai@tuta.io> 1524878473 +1000
+tree 29e1c4933afe05149cce478e13aeb9dc288a1b2b
+parent da2ced6f34dfb1523e85b7bbdf8330ef8e6ed2cf
+author rswindows10 <diogo.gouveia@my.istec.pt> 1533075618 +0100
+committer Tomas Slusny <slusnucky@gmail.com> 1533075618 +0200
 
-Correct misspellings of "transparent"
+Remove comment regarding crafting leather (#4601)
+
+Comment stated it was unknown whether animation was the same for all leather types and items

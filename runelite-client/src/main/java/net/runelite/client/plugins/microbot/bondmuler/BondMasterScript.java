@@ -5,6 +5,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.dialogue.Rs2Dialogue;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +24,7 @@ public class BondMasterScript extends Script {
         LOADING_ACCOUNTS,
         WAITING_FOR_IRONMAN,
         USING_BOND,
+        CONFIRMING_GIFT,
         WAITING_FOR_ACCEPTANCE,
         WAITING_FOR_LOGOUT,
         COMPLETE,
@@ -58,6 +60,9 @@ public class BondMasterScript extends Script {
                         break;
                     case USING_BOND:
                         handleUsingBond();
+                        break;
+                    case CONFIRMING_GIFT:
+                        handleConfirmingGift();
                         break;
                     case WAITING_FOR_ACCEPTANCE:
                         handleWaitingForAcceptance();
@@ -191,12 +196,35 @@ public class BondMasterScript extends Script {
                 net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper.getActorClickbox(player)
             );
             
-            log.info("Bond used on {}. Waiting for acceptance...", currentAccount.characterName);
-            BondQueue.setStatus("BOND_OFFERED");
+            log.info("Bond used on {}. Waiting for gift confirmation...", currentAccount.characterName);
             sleep(1000);
-            transitionTo(State.WAITING_FOR_ACCEPTANCE);
+            transitionTo(State.CONFIRMING_GIFT);
         } else {
             log.warn("Failed to select bond from inventory");
+        }
+    }
+    
+    private void handleConfirmingGift() {
+        BondQueue.IronmanAccount currentAccount = accounts.get(currentAccountIndex);
+        currentStatus = "Confirming gift: " + currentAccount.characterName;
+        
+        // Check if dialogue is open with "Give that bond to X as a free gift?"
+        if (Rs2Dialogue.isInDialogue()) {
+            log.info("Gift dialogue detected, clicking Yes...");
+            
+            // Click "Yes" option (first option in this dialogue)
+            if (Rs2Dialogue.clickOption("Yes")) {
+                log.info("Clicked Yes on gift dialogue");
+                BondQueue.setStatus("BOND_OFFERED");
+                sleep(1200);
+                transitionTo(State.WAITING_FOR_ACCEPTANCE);
+            } else {
+                // Try alternative - just press 1 (spacebar for continue or 1 for first option)
+                Rs2Dialogue.keyPress('1');
+                sleep(800);
+            }
+        } else {
+            log.debug("Waiting for gift dialogue to appear...");
         }
     }
     
