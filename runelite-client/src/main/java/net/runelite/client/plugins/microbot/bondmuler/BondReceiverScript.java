@@ -58,8 +58,12 @@ public class BondReceiverScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 // ABSOLUTE PRIORITY: Handle continue dialogues BEFORE ANYTHING ELSE
-                // This MUST run before super.run() or isLoggedIn() checks!
-                if (Rs2Dialogue.hasContinue() || Rs2Widget.hasWidget("Click here to continue") || Rs2Widget.hasWidget("continue")) {
+                // BUT: Skip if we just finished applying membership (let logout happen!)
+                boolean shouldHandleContinue = (Rs2Dialogue.hasContinue() || 
+                    Rs2Widget.hasWidget("Click here to continue") || 
+                    Rs2Widget.hasWidget("continue"));
+                    
+                if (shouldHandleContinue && currentState != State.LOGGING_OUT && !membershipApplied) {
                     log.info("CONTINUE DIALOGUE DETECTED - SPAMMING SPACE!");
                     
                     // Just spam SPACE - the most reliable method
