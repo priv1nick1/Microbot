@@ -140,15 +140,33 @@ public class BondReceiverScript extends Script {
         // Check for bond offer dialogue: "X is offering to give you a bond."
         if (Rs2Dialogue.isInDialogue()) {
             String dialogueText = Rs2Dialogue.getDialogueText();
+            
+            // Bond offer dialogue detected
             if (dialogueText != null && dialogueText.toLowerCase().contains("offering to give you a bond")) {
-                log.info("Bond offer dialogue detected! Clicking Accept it...");
+                log.info("Bond offer dialogue detected!");
+                currentStatus = "Accepting bond offer...";
                 
-                if (Rs2Dialogue.clickOption("Accept it")) {
-                    log.info("Clicked Accept it on bond offer!");
-                    sleep(1200);
-                    // Bond should appear in inventory soon
-                    return;
+                // Wait for the options to appear
+                if (Rs2Dialogue.hasSelectAnOption()) {
+                    log.info("Options available. Clicking Accept it...");
+                    
+                    // Try clicking "Accept it"
+                    boolean clicked = Rs2Dialogue.clickOption("Accept");
+                    if (clicked) {
+                        log.info("Clicked Accept on bond offer!");
+                        sleep(1500);
+                        return;
+                    } else {
+                        // Fallback: Try keyboard option 1
+                        log.info("Trying keyboard option 1...");
+                        Rs2Dialogue.keyPressForDialogueOption(1);
+                        sleep(1500);
+                        return;
+                    }
+                } else {
+                    log.debug("Waiting for dialogue options to appear...");
                 }
+                return;
             }
         }
         
