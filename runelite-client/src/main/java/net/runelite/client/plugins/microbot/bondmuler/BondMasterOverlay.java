@@ -24,7 +24,7 @@ public class BondMasterOverlay extends OverlayPanel {
         
         // Title with version
         panelComponent.getChildren().add(TitleComponent.builder()
-            .text("Bond Master v0.05")
+            .text("Bond Master v0.06")
             .color(Color.ORANGE)
             .build());
         

@@ -263,22 +263,36 @@ public class BondReceiverScript extends Script {
             sleep(1500);
         }
         
-        // Step 2: HARDCODED CLICK - Accept button is always at same position
-        log.info("Clicking Accept button at hardcoded coordinates (330, 255)...");
-        currentStatus = "Clicking Accept button...";
+        // Step 2: TRY EVERYTHING - keyboard, widget, and hardcoded click!
+        log.info("Attempting to accept bond confirmation...");
+        currentStatus = "Accepting confirmation...";
         
-        // Try widget first
+        // METHOD 1: Press keyboard "1" (first option in dialogue)
+        log.info("Method 1: Pressing keyboard 1...");
+        Rs2Keyboard.keyPress(KeyEvent.VK_1);
+        sleep(800);
+        
+        // Check if bond is gone after keyboard press
+        if (!Rs2Inventory.hasItem("Old school bond")) {
+            log.info("SUCCESS! Bond consumed after keyboard press!");
+            membershipApplied = true;
+            BondQueue.setStatus("COMPLETE");
+            transitionTo(State.LOGGING_OUT);
+            return;
+        }
+        
+        // METHOD 2: Try widget click
         Widget acceptButton = Rs2Widget.getWidget(289, 7);
         if (acceptButton != null && !acceptButton.isHidden()) {
-            log.info("Accept button widget found! Clicking bounds...");
+            log.info("Method 2: Widget click...");
             Microbot.getMouse().click(acceptButton.getBounds());
-            sleep(1200);
-        } else {
-            // FALLBACK: Just click the hardcoded coordinates (center of button at x=303, y=241)
-            log.info("Widget not found, clicking hardcoded position (330, 255)...");
-            Microbot.getMouse().click(new net.runelite.api.Point(330, 255));
-            sleep(1200);
+            sleep(800);
         }
+        
+        // METHOD 3: Hardcoded coordinate click
+        log.info("Method 3: Hardcoded click (330, 255)...");
+        Microbot.getMouse().click(new Point(330, 255));
+        sleep(800);
         
         // Check if bond is gone (success!)
         if (!Rs2Inventory.hasItem("Old school bond")) {
@@ -288,6 +302,8 @@ public class BondReceiverScript extends Script {
             transitionTo(State.LOGGING_OUT);
             return;
         }
+        
+        log.debug("Still waiting for bond to be consumed...");
         
         log.debug("Waiting for membership interface...");
     }
