@@ -9,7 +9,7 @@ echo.
 
 :: Configuration
 set "JAVA_PATH=C:\Program Files\Eclipse Adoptium\jdk-11.0.26.4-hotspot\bin\java.exe"
-set "MICROBOT_JAR=C:\Users\MiniPC10\Desktop\Microbot\runelite-client\target\client-1.11.18-SNAPSHOT.jar"
+set "MICROBOT_JAR=C:\Users\MiniPC10\Desktop\Microbot\runelite-client\target\microbot-2.0.15.jar"
 set "ACCOUNTS_FILE=accounts.txt"
 set "MEMORY=2048"
 set "DELAY_SECONDS=30"
