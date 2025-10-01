@@ -329,7 +329,15 @@ public class BondReceiverScript extends Script {
         currentStatus = "Logging in account " + (currentAccountIndex + 1) + "/" + accounts.size();
         log.info("Logging in: {} ({}/{})", account.email, currentAccountIndex + 1, accounts.size());
         
-        // Set credentials directly (plain text password)
+        // Step 1: Click "Existing User" if on welcome screen
+        if (Rs2Widget.hasWidget("Existing User")) {
+            log.info("Welcome screen detected, clicking 'Existing User'...");
+            Rs2Widget.clickWidget("Existing User");
+            sleep(2000);
+            return; // Wait for next tick
+        }
+        
+        // Step 2: Set credentials directly (plain text password)
         Microbot.getClient().setUsername(account.email);
         Microbot.getClient().setPassword(account.password);
         log.info("Credentials set, pressing enter to login...");
