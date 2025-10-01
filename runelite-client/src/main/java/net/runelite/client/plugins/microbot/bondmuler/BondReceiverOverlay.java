@@ -22,9 +22,9 @@ public class BondReceiverOverlay extends OverlayPanel {
         panelComponent.setPreferredSize(new Dimension(220, 120));
         panelComponent.getChildren().clear();
         
-        // Title
+        // Title with version
         panelComponent.getChildren().add(TitleComponent.builder()
-            .text("Bond Receiver")
+            .text("Bond Receiver v0.03")
             .color(Color.CYAN)
             .build());
         
@@ -58,4 +58,5 @@ public class BondReceiverOverlay extends OverlayPanel {
         return super.render(graphics);
     }
 }
+
 

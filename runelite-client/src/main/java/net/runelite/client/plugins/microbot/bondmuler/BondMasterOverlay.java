@@ -22,9 +22,9 @@ public class BondMasterOverlay extends OverlayPanel {
         panelComponent.setPreferredSize(new Dimension(250, 150));
         panelComponent.getChildren().clear();
         
-        // Title
+        // Title with version
         panelComponent.getChildren().add(TitleComponent.builder()
-            .text("Bond Master")
+            .text("Bond Master v0.03")
             .color(Color.ORANGE)
             .build());
         
@@ -66,4 +66,5 @@ public class BondMasterOverlay extends OverlayPanel {
         return super.render(graphics);
     }
 }
+
 
