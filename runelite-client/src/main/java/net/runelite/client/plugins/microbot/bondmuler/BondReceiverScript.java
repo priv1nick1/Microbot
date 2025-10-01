@@ -255,15 +255,15 @@ public class BondReceiverScript extends Script {
             return;
         }
         
-        // Step 1: Click "14 days" option
-        if (Rs2Widget.clickWidget("14 days")) {
-            log.info("Clicked 14 days membership option");
+        // Step 1: Click "14 days" option if present
+        if (Rs2Widget.hasWidget("14 days")) {
+            log.info("Clicking 14 days membership option...");
+            Rs2Widget.clickWidget("14 days");
             sleep(1500);
-            return;
         }
         
         // Step 2: Click the exact Accept button widget (289:7)
-        log.info("Looking for Accept button...");
+        log.info("Looking for Accept button (widget 289:7)...");
         currentStatus = "Clicking Accept button...";
         
         // Get the exact Accept button widget (289:7)
@@ -283,12 +283,9 @@ public class BondReceiverScript extends Script {
                 transitionTo(State.LOGGING_OUT);
                 return;
             }
+        } else {
+            log.debug("Accept button (289:7) not found or hidden, will retry...");
         }
-        
-        // Fallback: spam SPACE if widget not found
-        log.debug("Accept button not found, trying SPACE...");
-        Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
-        sleep(300);
         
         log.debug("Waiting for membership interface...");
     }

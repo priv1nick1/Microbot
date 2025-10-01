@@ -27,3 +27,4 @@ public interface nICK1PrivateHunterConfig extends Config {
     }
 }
 
+

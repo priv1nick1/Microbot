@@ -24,7 +24,7 @@ public class BondReceiverOverlay extends OverlayPanel {
         
         // Title with version
         panelComponent.getChildren().add(TitleComponent.builder()
-            .text("Bond Receiver v0.03")
+            .text("Bond Receiver v0.04")
             .color(Color.CYAN)
             .build());
         
