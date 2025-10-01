@@ -262,14 +262,18 @@ public class BondReceiverScript extends Script {
             return;
         }
         
-        // Step 2: ULTRA AGGRESSIVE ACCEPT - Just spam SPACE until bond is gone!
-        log.info("Looking for Accept button or bond confirmation...");
-        currentStatus = "Confirming membership...";
+        // Step 2: Click the exact Accept button widget (289:7)
+        log.info("Looking for Accept button...");
+        currentStatus = "Clicking Accept button...";
         
-        // Just SPAM SPACE - it works for everything!
-        for (int i = 0; i < 5; i++) {
-            Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
-            sleep(300);
+        // Get the exact Accept button widget (289:7)
+        Widget acceptButton = Rs2Widget.getWidget(289, 7);
+        if (acceptButton != null && !acceptButton.isHidden()) {
+            log.info("Accept button found! Clicking it...");
+            
+            // Click it directly using bounds
+            Microbot.getMouse().click(acceptButton.getBounds());
+            sleep(1200);
             
             // Check if bond is gone (success!)
             if (!Rs2Inventory.hasItem("Old school bond")) {
@@ -281,7 +285,10 @@ public class BondReceiverScript extends Script {
             }
         }
         
-        log.debug("Still waiting for bond to be consumed...");
+        // Fallback: spam SPACE if widget not found
+        log.debug("Accept button not found, trying SPACE...");
+        Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
+        sleep(300);
         
         log.debug("Waiting for membership interface...");
     }
