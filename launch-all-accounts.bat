@@ -9,20 +9,28 @@ echo.
 
 :: Configuration
 set "JAVA_PATH=C:\Program Files\Eclipse Adoptium\jdk-11.0.26.4-hotspot\bin\java.exe"
-set "MICROBOT_JAR=C:\Users\MiniPC10\Desktop\Microbot\runelite-client\target\microbot-2.0.15.jar"
 set "ACCOUNTS_FILE=accounts.txt"
 set "MEMORY=2048"
 set "DELAY_SECONDS=30"
 
+:: Find the latest Microbot client automatically
+echo Finding latest Microbot client...
+for /f "delims=" %%i in ('dir /b /o-d runelite-client\target\microbot-*.jar 2^>nul') do (
+    set "MICROBOT_JAR=runelite-client\target\%%i"
+    goto :found_client
+)
+
+echo ERROR: No Microbot client found in runelite-client\target\
+echo Please build the project first with: mvn clean install -DskipTests
+pause
+exit /b 1
+
+:found_client
+echo Using client: %MICROBOT_JAR%
+
 :: Check if files exist
 if not exist "%JAVA_PATH%" (
     echo ERROR: Java not found at %JAVA_PATH%
-    pause
-    exit /b 1
-)
-
-if not exist "%MICROBOT_JAR%" (
-    echo ERROR: Microbot JAR not found at %MICROBOT_JAR%
     pause
     exit /b 1
 )
