@@ -31,6 +31,14 @@ public class PlayerHopLogScript extends Script {
             try {
                 if (!Microbot.isLoggedIn()) {
                     currentStatus = "Logged out";
+                    nearbyPlayers = 0;
+                    return;
+                }
+                
+                // Safety check: Wait for player to be fully loaded
+                if (Rs2Player.getLocalPlayer() == null) {
+                    currentStatus = "Loading...";
+                    nearbyPlayers = 0;
                     return;
                 }
                 

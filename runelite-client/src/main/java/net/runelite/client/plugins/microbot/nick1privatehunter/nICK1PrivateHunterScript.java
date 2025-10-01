@@ -61,8 +61,24 @@ public class nICK1PrivateHunterScript extends Script {
             if (!super.run()) return;
             
             try {
-                // Update current exp
-                currentExp = Microbot.getClient().getSkillExperience(Skill.HUNTER);
+                // Safety check: Wait for player to be fully loaded
+                if (!Microbot.isLoggedIn()) {
+                    currentStatus = "Not logged in";
+                    return;
+                }
+                
+                if (Rs2Player.getLocalPlayer() == null) {
+                    currentStatus = "Loading player data...";
+                    return;
+                }
+                
+                // Update current exp (with null check)
+                try {
+                    currentExp = Microbot.getClient().getSkillExperience(Skill.HUNTER);
+                } catch (Exception e) {
+                    currentStatus = "Loading game data...";
+                    return;
+                }
                 
                 // Handle dialogues first (like sailing confirmation)
                 handleDialogues();
@@ -87,7 +103,8 @@ public class nICK1PrivateHunterScript extends Script {
                 }
                 
             } catch (Exception ex) {
-                log.error("Error in script: {}", ex.getMessage());
+                log.error("Error in script: {}", ex.getMessage(), ex);
+                currentStatus = "Error: " + (ex.getMessage() != null ? ex.getMessage() : "Unknown");
             }
         }, 0, 1000, TimeUnit.MILLISECONDS);
         
