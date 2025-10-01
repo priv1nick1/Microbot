@@ -264,15 +264,18 @@ public class BondReceiverScript extends Script {
         }
         
         // Step 2: Click "Accept" using the SAME method as "14 days"!
+        boolean acceptClicked = false;
         if (Rs2Widget.hasWidget("Accept")) {
             log.info("Clicking Accept button (same method as 14 days)...");
             Rs2Widget.clickWidget("Accept");
-            sleep(1500);
+            acceptClicked = true;
+            sleep(2000); // Wait for animation
         }
         
-        // Check if bond is gone (success!)
-        if (!Rs2Inventory.hasItem("Old school bond")) {
-            log.info("SUCCESS! Bond consumed!");
+        // Check if bond is gone OR interface closed (success!)
+        if (!Rs2Inventory.hasItem("Old school bond") || 
+            (acceptClicked && !Rs2Widget.hasWidget("Accept") && !Rs2Widget.hasWidget("14 days"))) {
+            log.info("SUCCESS! Bond consumed and membership applied!");
             membershipApplied = true;
             BondQueue.setStatus("COMPLETE");
             transitionTo(State.LOGGING_OUT);
