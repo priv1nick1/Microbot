@@ -48,15 +48,17 @@ public class BondReceiverScript extends Script {
             if (!super.run()) return;
             
             try {
+                // PRIORITY 1: Handle login prompts FIRST (before anything else!)
+                if (Rs2Dialogue.hasContinue()) {
+                    log.info("Continue dialogue detected - clicking...");
+                    Rs2Dialogue.clickContinue();
+                    sleep(600);
+                    return; // Exit and retry next cycle
+                }
+                
                 if (!Microbot.isLoggedIn()) {
                     currentStatus = "Not logged in";
                     return;
-                }
-                
-                // Handle login prompts (space bar to continue, etc.)
-                if (Rs2Dialogue.hasContinue()) {
-                    Rs2Dialogue.clickContinue();
-                    sleep(600);
                 }
                 
                 // Get character name
