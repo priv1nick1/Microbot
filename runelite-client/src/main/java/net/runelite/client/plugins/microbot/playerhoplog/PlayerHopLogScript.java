@@ -21,9 +21,12 @@ public class PlayerHopLogScript extends Script {
     public boolean run(PlayerHopLogConfig config) {
         Microbot.enableAutoRunOn = false;
         
-        // Reset stats
-        totalHops = 0;
-        lastHopTime = 0;
+        // Don't reset stats - preserve hop count across restarts
+        // Only initialize if this is truly the first time
+        if (totalHops < 0) { // This will never be true, so stats are preserved
+            totalHops = 0;
+            lastHopTime = 0;
+        }
         
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             if (!super.run()) return;
@@ -91,6 +94,13 @@ public class PlayerHopLogScript extends Script {
     public void shutdown() {
         super.shutdown();
         log.info("Player Hop Log stopped. Total hops: {}", totalHops);
+    }
+    
+    // Method to manually reset hop count (call this if you want to reset)
+    public static void resetHopCount() {
+        totalHops = 0;
+        lastHopTime = 0;
+        log.info("Hop count reset to 0");
     }
 }
 

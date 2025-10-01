@@ -34,6 +34,9 @@ public class nICK1PrivateHunterScript extends Script {
     public static int startExp;
     public static int currentExp;
     public static String currentStatus = "Starting...";
+    public static boolean hasStartedCatching = false; // Track if we've caught our first butterfly
+    public static long firstCatchTime; // Time when we first started catching
+    public static int firstCatchExp; // Exp when we first started catching
     
     // State tracking
     private enum State {
@@ -56,6 +59,7 @@ public class nICK1PrivateHunterScript extends Script {
         currentExp = startExp;
         currentStatus = "Starting...";
         bankingFailCount = 0;
+        hasStartedCatching = false; // Reset catching flag
         
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             if (!super.run()) return;
@@ -240,14 +244,17 @@ public class nICK1PrivateHunterScript extends Script {
         int hunterLevel = Rs2Player.getRealSkillLevel(Skill.HUNTER);
         WorldArea targetArea;
         String targetName;
+        String butterflyName;
         
         // Determine where to go based on hunter level
         if (hunterLevel < HUNTER_LEVEL_THRESHOLD) {
             targetArea = RUBY_HARVEST_AREA;
             targetName = "Ruby Harvest area (West Aldarin)";
+            butterflyName = "Ruby harvest";
         } else {
             targetArea = SUNLIGHT_MOTH_AREA;
             targetName = "Sunlight Moth area (North of Hunter Guild)";
+            butterflyName = "Sunlight moth";
         }
         
         log.info("Hunter level: {}. Traveling to {}", hunterLevel, targetName);
@@ -256,8 +263,23 @@ public class nICK1PrivateHunterScript extends Script {
         
         // Check if we're already in the target area
         if (targetArea.contains(playerLocation)) {
-            log.info("Arrived at destination!");
-            currentState = State.CATCHING;
+            // SMART CHECK: Can we see the butterflies? If yes, start catching immediately
+            if (Rs2Npc.getNpc(butterflyName) != null) {
+                log.info("Already at destination and can see {}! Starting to catch.", butterflyName);
+                currentState = State.CATCHING;
+                return;
+            } else {
+                log.info("At destination but no butterflies visible. Moving to center of area.");
+                // Walk to the center of the area to find butterflies
+                WorldPoint centerPoint = new WorldPoint(
+                    targetArea.getX() + targetArea.getWidth() / 2,
+                    targetArea.getY() + targetArea.getHeight() / 2,
+                    targetArea.getPlane()
+                );
+                Rs2Walker.walkTo(centerPoint, 5);
+                currentStatus = "Looking for " + butterflyName;
+                Microbot.status = currentStatus;
+            }
         } else {
             // Walk to the center of the area
             WorldPoint centerPoint = new WorldPoint(
@@ -295,6 +317,14 @@ public class nICK1PrivateHunterScript extends Script {
         boolean caught = Rs2Npc.interact(butterflyName, "Catch");
         
         if (caught) {
+            // Mark that we've started catching for XP calculation
+            if (!hasStartedCatching) {
+                hasStartedCatching = true;
+                firstCatchTime = System.currentTimeMillis();
+                firstCatchExp = currentExp;
+                log.info("First catch detected! Starting XP tracking from now.");
+            }
+            
             // Wait a bit for the action to complete
             sleep(1200, 1800);
         } else {

@@ -39,9 +39,14 @@ public class nICK1PrivateHunterOverlay extends OverlayPanel {
             long runtime = System.currentTimeMillis() - nICK1PrivateHunterScript.startTime;
             int expGained = nICK1PrivateHunterScript.currentExp - nICK1PrivateHunterScript.startExp;
             
-            // Calculate exp per hour
-            double hours = runtime / 3600000.0;
-            int expPerHour = hours > 0 ? (int)(expGained / hours) : 0;
+            // Calculate exp per hour - only start calculating after first catch
+            int expPerHour = 0;
+            if (nICK1PrivateHunterScript.hasStartedCatching) {
+                long catchingTime = System.currentTimeMillis() - nICK1PrivateHunterScript.firstCatchTime;
+                int catchingExpGained = nICK1PrivateHunterScript.currentExp - nICK1PrivateHunterScript.firstCatchExp;
+                double catchingHours = catchingTime / 3600000.0;
+                expPerHour = catchingHours > 0 ? (int)(catchingExpGained / catchingHours) : 0;
+            }
             
             // Current level
             int currentLevel = Rs2Player.getRealSkillLevel(Skill.HUNTER);
