@@ -48,15 +48,31 @@ public class BondReceiverScript extends Script {
             if (!super.run()) return;
             
             try {
-                // PRIORITY 1: Handle ANY dialogue with continue - SPAM IT!
-                if (Rs2Dialogue.hasContinue()) {
-                    log.info("CONTINUE DETECTED - CLICKING SPACE!");
+                // PRIORITY 1: Handle ANY continue dialogue - SPAM EVERYTHING!
+                if (Rs2Dialogue.hasContinue() || Rs2Widget.hasWidget("Click here to continue")) {
+                    log.info("CONTINUE DETECTED - SPAMMING ALL KEYS!");
+                    
+                    // Method 1: Rs2Dialogue continue
                     Rs2Dialogue.clickContinue();
-                    sleep(300);
+                    sleep(200);
+                    
+                    // Method 2: Click the widget
+                    Rs2Widget.clickWidget("Click here to continue");
+                    sleep(200);
+                    
+                    // Method 3: SPACE
                     Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_SPACE);
-                    sleep(300);
+                    sleep(200);
+                    
+                    // Method 4: ENTER
                     Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_ENTER);
+                    sleep(200);
+                    
+                    // Method 5: ESC (close any interface)
+                    Rs2Keyboard.keyPress(java.awt.event.KeyEvent.VK_ESCAPE);
                     sleep(600);
+                    
+                    log.info("Continue spam complete!");
                     return; // Exit and retry
                 }
                 
