@@ -140,18 +140,36 @@ public class BondReceiverScript extends Script {
             return;
         }
         
-        // Simple detection: if we see "Accept" in dialogue options, press 1
-        if (Rs2Dialogue.hasSelectAnOption()) {
-            // Check if "Accept" option exists
-            if (Rs2Dialogue.hasDialogueOption("Accept")) {
-                log.info("Bond offer detected! Pressing 1 to accept...");
-                currentStatus = "Accepting bond offer...";
-                
-                // Press 1 to select first option (Accept it.)
-                Rs2Keyboard.keyPress(KeyEvent.VK_1);
-                sleep(1500);
-                return;
+        // BELT-AND-SUSPENDERS: If we see "Accept" in dialogue, do EVERYTHING
+        if (Rs2Dialogue.hasSelectAnOption() && Rs2Dialogue.hasDialogueOption("Accept")) {
+            log.info("BOND OFFER DETECTED! Attempting to accept...");
+            currentStatus = "Accepting bond offer...";
+            
+            // Try METHOD 1: Click the widget directly
+            Widget acceptOption = Rs2Dialogue.getDialogueOption("Accept");
+            if (acceptOption != null) {
+                log.info("Method 1: Clicking Accept widget...");
+                Rs2Widget.clickWidget(acceptOption);
+                sleep(300);
             }
+            
+            // Try METHOD 2: Press keyboard 1
+            log.info("Method 2: Pressing keyboard 1...");
+            Rs2Keyboard.keyPress(KeyEvent.VK_1);
+            sleep(300);
+            
+            // Try METHOD 3: Press numpad 1
+            log.info("Method 3: Pressing numpad 1...");
+            Rs2Keyboard.keyPress(KeyEvent.VK_NUMPAD1);
+            sleep(300);
+            
+            // Try METHOD 4: Type the character '1'
+            log.info("Method 4: Typing character 1...");
+            Rs2Keyboard.typeString("1");
+            sleep(1500);
+            
+            log.info("All accept methods attempted! Waiting for bond...");
+            return;
         }
         
         // Check for trade screen (widget 334 is trade screen)
@@ -165,7 +183,6 @@ public class BondReceiverScript extends Script {
         // Check queue status
         String status = BondQueue.getStatus();
         if (status.equals("BOND_OFFERED")) {
-            // Master has offered the bond, look for trade request
             currentStatus = "Looking for bond offer...";
         }
     }
