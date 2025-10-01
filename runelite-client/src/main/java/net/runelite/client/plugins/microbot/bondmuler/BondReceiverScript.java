@@ -240,21 +240,21 @@ public class BondReceiverScript extends Script {
             return;
         }
         
-        // Look for "14 days" text in widgets and click it
+        // Step 1: Click "14 days" option
         if (Rs2Widget.clickWidget("14 days")) {
             log.info("Clicked 14 days membership option");
             sleep(1500);
             return;
         }
         
-        // Alternative: Try clicking widget with "membership" text that contains "14"
-        if (Rs2Widget.clickWidget("14 days membership")) {
-            log.info("Clicked 14 days membership (full text)");
+        // Step 2: Click "Accept" on the confirmation popup
+        if (Rs2Widget.clickWidget("Accept")) {
+            log.info("Clicked Accept on membership confirmation");
             sleep(1500);
             return;
         }
         
-        log.debug("Waiting for membership interface or bond consumption...");
+        log.debug("Waiting for membership interface...");
     }
     
     private void handleLoggingOut() {
