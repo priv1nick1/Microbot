@@ -24,7 +24,7 @@ public class nICK1PrivateLibraryOverlay extends OverlayPanel {
     @Override
     public Dimension render(Graphics2D graphics) {
         try {
-            panelComponent.setPreferredSize(new Dimension(220, 200));
+            panelComponent.setPreferredSize(new Dimension(220, 190));
             
             // Title
             panelComponent.getChildren().add(TitleComponent.builder()
@@ -38,15 +38,21 @@ public class nICK1PrivateLibraryOverlay extends OverlayPanel {
             long runtime = System.currentTimeMillis() - nICK1PrivateLibraryScript.startTime;
             int expGained = nICK1PrivateLibraryScript.currentExp - nICK1PrivateLibraryScript.startExp;
             
-            // Calculate exp per hour
-            double hours = runtime / 3600000.0;
-            int expPerHour = hours > 0 ? (int)(expGained / hours) : 0;
+            // Calculate exp per hour - only start calculating after first book collection
+            int expPerHour = 0;
+            if (nICK1PrivateLibraryScript.totalBooksCollected > 0) {
+                double hours = runtime / 3600000.0;
+                expPerHour = hours > 0 ? (int)(expGained / hours) : 0;
+            }
             
             // Current level
             int currentLevel = Rs2Player.getRealSkillLevel(Skill.MAGIC);
             
-            // Calculate time to next level
-            String timeToLevel = calculateTimeToLevel(currentLevel, expPerHour);
+            // Dynamic target level - 65 if below, 99 if at or above
+            int targetLevel = currentLevel < 65 ? 65 : 99;
+            
+            // Calculate time to dynamic target level
+            String timeToLevel = calculateTimeToLevel(currentLevel, expPerHour, targetLevel);
             
             // Display stats
             panelComponent.getChildren().add(LineComponent.builder()
@@ -56,43 +62,21 @@ public class nICK1PrivateLibraryOverlay extends OverlayPanel {
                     .build());
             
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Exp Gained:")
-                    .right(NUMBER_FORMAT.format(expGained))
-                    .rightColor(Color.LIGHT_GRAY)
-                    .build());
-            
-            panelComponent.getChildren().add(LineComponent.builder()
                     .left("Current level:")
                     .right(String.valueOf(currentLevel))
                     .rightColor(Color.YELLOW)
                     .build());
             
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Time to next level:")
+                    .left("Time to level " + targetLevel + ":")
                     .right(timeToLevel)
                     .rightColor(Color.CYAN)
-                    .build());
-            
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Books collected:")
-                    .right(String.valueOf(nICK1PrivateLibraryScript.totalBooksCollected))
-                    .rightColor(Color.ORANGE)
                     .build());
             
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Status:")
                     .right(nICK1PrivateLibraryScript.currentStatus)
                     .rightColor(Color.WHITE)
-                    .build());
-            
-            // Calculate and display runtime
-            long runtimeMillis = System.currentTimeMillis() - nICK1PrivateLibraryScript.startTime;
-            String runtimeFormatted = formatRuntime(runtimeMillis);
-            
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Time Running:")
-                    .right(runtimeFormatted)
-                    .rightColor(Color.MAGENTA)
                     .build());
 
         } catch (Exception ex) {
@@ -112,9 +96,9 @@ public class nICK1PrivateLibraryOverlay extends OverlayPanel {
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
     
-    private String calculateTimeToLevel(int currentLevel, int expPerHour) {
-        if (currentLevel >= 99) {
-            return "Max level!";
+    private String calculateTimeToLevel(int currentLevel, int expPerHour, int targetLevel) {
+        if (currentLevel >= targetLevel) {
+            return "Level reached!";
         }
         
         if (expPerHour <= 0) {
@@ -122,11 +106,11 @@ public class nICK1PrivateLibraryOverlay extends OverlayPanel {
         }
         
         int currentExp = nICK1PrivateLibraryScript.currentExp;
-        int nextLevelExp = net.runelite.api.Experience.getXpForLevel(currentLevel + 1);
-        int expNeeded = nextLevelExp - currentExp;
+        int targetExp = net.runelite.api.Experience.getXpForLevel(targetLevel);
+        int expNeeded = targetExp - currentExp;
         
         if (expNeeded <= 0) {
-            return "Level up!";
+            return "Level reached!";
         }
         
         double hoursNeeded = (double) expNeeded / expPerHour;
