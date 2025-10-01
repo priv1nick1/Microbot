@@ -22,11 +22,32 @@ public class Login {
     private static final int MAX_PLAYER_COUNT = 1950;
 
     public Login() {
-        this(Microbot.getClient().getWorld() > 300 ? Microbot.getClient().getWorld() : getRandomWorld(activeProfile.isMember()));
+        this(getDefaultWorld());
+    }
+    
+    private static int getDefaultWorld() {
+        if (ExternalLogin.hasExternalCredentials()) {
+            Integer world = ExternalLogin.getWorld();
+            if (world != null) {
+                return world;
+            }
+            Boolean isMembers = ExternalLogin.isMembers();
+            return getRandomWorld(isMembers != null ? isMembers : true);
+        } else {
+            return Microbot.getClient().getWorld() > 300 ? Microbot.getClient().getWorld() : getRandomWorld(activeProfile.isMember());
+        }
     }
 
     public Login(int world) {
-        this(activeProfile.getName(), activeProfile.getPassword(), world);
+        this(getUsername(), getPassword(), world);
+    }
+    
+    private static String getUsername() {
+        return ExternalLogin.hasExternalCredentials() ? ExternalLogin.getUsername() : activeProfile.getName();
+    }
+    
+    private static String getPassword() {
+        return ExternalLogin.hasExternalCredentials() ? ExternalLogin.getEncryptedPassword() : activeProfile.getPassword();
     }
 
     public Login(String username, String password) {

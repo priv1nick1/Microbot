@@ -236,6 +236,27 @@ public class AutoLoginScript extends Script {
      */
     private void initiateLogin(AutoLoginConfig config) {
         try {
+            // Check for external credentials first (EternalFarm integration)
+            if (net.runelite.client.plugins.microbot.util.security.ExternalLogin.hasExternalCredentials()) {
+                log.info("Using external credentials for login (EternalFarm integration)");
+                Integer externalWorld = net.runelite.client.plugins.microbot.util.security.ExternalLogin.getWorld();
+                if (externalWorld != null) {
+                    new Login(externalWorld);
+                } else {
+                    new Login();
+                }
+                lastLoginAttemptTime = Instant.now();
+                retryCount++;
+                return;
+            }
+            
+            // Fallback to RuneLite profile login
+            if (Login.activeProfile == null) {
+                log.error("No RuneLite profile or external credentials available for login!");
+                transitionToState(LoginState.ERROR);
+                return;
+            }
+            
             // start login watchdog if enabled and not already started
             if (config.enableLoginWatchdog() && loginWatchdogStartTime == null) {
                 loginWatchdogStartTime = Instant.now();

@@ -121,6 +121,9 @@ public class MicrobotPlugin extends Plugin
 		log.info("Microbot: {} - {}", RuneLiteProperties.getMicrobotVersion(), RuneLiteProperties.getMicrobotCommit());
 		log.info("JVM: {} {}", System.getProperty("java.vendor"), System.getProperty("java.runtime.version"));
 
+		// Initialize external login support for EternalFarm and other client managers
+		net.runelite.client.plugins.microbot.util.security.ExternalLogin.initialize();
+
 		microbotVersionChecker.checkForUpdate();
 
 		gameChatAppender = new GameChatAppender();
