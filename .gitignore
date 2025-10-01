@@ -27,3 +27,7 @@ project.properties
 /commits.html
 /runelite-client_part4.txt
 /runelite-client_part5.txt
+
+# Sensitive account data - never commit!
+accounts.txt
+accounts_with_credentials.txt
