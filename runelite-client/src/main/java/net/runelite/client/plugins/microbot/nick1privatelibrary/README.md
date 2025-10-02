@@ -44,13 +44,13 @@ Located in **top-left corner**:
 
 ## How to Use
 
-1. **Have required items** (coins for traveling)
+1. **Have required items** (graceful outfit recommended)
 2. **Enable the plugin** - Search for "nICK1 Private Library"
 3. **Script will automatically**:
    - Walk to the library
-   - Find and search bookcases
-   - Collect magic exp books
-   - Bank when inventory is full
+   - Talk to NPCs (Sam, Professor Gracklebone, or Villia)
+   - Search bookcases for requested books
+   - Deliver books to NPCs for Magic XP
    - Continue forever!
 
 ## Locations
@@ -63,6 +63,7 @@ Located in **top-left corner**:
 ## Tips
 
 - Works great with other Microbot scripts
-- Books give magic XP when read
-- Library favor affects book availability
-- Higher favor = more books available
+- Books give 15x Magic level XP when delivered to NPCs
+- Books cannot be banked - must be delivered immediately
+- Library locations reset every 80-100 minutes
+- Graceful outfit recommended for faster movement
