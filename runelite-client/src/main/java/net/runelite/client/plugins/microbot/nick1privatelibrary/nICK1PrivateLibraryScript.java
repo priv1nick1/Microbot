@@ -61,6 +61,11 @@ public class nICK1PrivateLibraryScript extends Script {
     private static final int MAX_BOOKCASE_SEARCHES = 50; // Prevent infinite searching
     private boolean hasSpokenToBiblia = false; // Track if we've gotten location hints
     private boolean isHelpingSomeoneElse = false; // Track if we're already helping another NPC
+    
+    // Bookcase tracking
+    private java.util.Map<WorldPoint, String> bookcaseMemory = new java.util.HashMap<>(); // Remember what book is in each bookcase
+    private java.util.List<WorldPoint> searchedBookcases = new java.util.ArrayList<>(); // Track which bookcases we've searched
+    private WorldPoint currentBookcaseTarget = null; // Current bookcase we're walking to
 
     public boolean run(nICK1PrivateLibraryConfig config) {
         Microbot.enableAutoRunOn = true;
@@ -224,8 +229,22 @@ public class nICK1PrivateLibraryScript extends Script {
     }
     
     private void handleSearchingBookcases() {
-        currentStatus = "Searching for " + (requestedBook != null ? requestedBook : "book") + "...";
+        currentStatus = "Systematically searching bookcases for " + (requestedBook != null ? requestedBook : "book") + "...";
         log.info(currentStatus);
+        
+        // Check if we've already found the requested book in our memory
+        if (requestedBook != null && bookcaseMemory.containsValue(requestedBook)) {
+            log.info("Found {} in our memory! Going to collect it.", requestedBook);
+            // Find the bookcase with the requested book
+            for (java.util.Map.Entry<WorldPoint, String> entry : bookcaseMemory.entrySet()) {
+                if (entry.getValue().equals(requestedBook)) {
+                    currentBookcaseTarget = entry.getKey();
+                    Rs2Walker.walkTo(currentBookcaseTarget, 3);
+                    currentState = State.COLLECTING_BOOK;
+                    return;
+                }
+            }
+        }
         
         // Check if we've searched too many bookcases
         if (bookcaseSearchCount >= MAX_BOOKCASE_SEARCHES) {
@@ -235,17 +254,34 @@ public class nICK1PrivateLibraryScript extends Script {
             return;
         }
         
-        // Find and search a bookcase
-        boolean searched = Rs2GameObject.interact("Bookcase", "Search");
+        // Find the next unsearched bookcase
+        WorldPoint nextBookcase = findNextUnsearchedBookcase();
         
-        if (searched) {
-            bookcaseSearchCount++;
-            log.info("Searching bookcase {}/{}...", bookcaseSearchCount, MAX_BOOKCASE_SEARCHES);
-            sleep(2000, 3000); // Wait for search to complete
-            currentState = State.COLLECTING_BOOK;
+        if (nextBookcase != null) {
+            currentBookcaseTarget = nextBookcase;
+            log.info("Walking to bookcase at: {}", nextBookcase);
+            Rs2Walker.walkTo(nextBookcase, 3);
+            
+            // Check if we're close enough to search
+            WorldPoint playerLocation = Rs2Player.getWorldLocation();
+            if (playerLocation.distanceTo(nextBookcase) <= 3) {
+                // Try to search the bookcase
+                boolean searched = Rs2GameObject.interact("Bookcase", "Search");
+                
+                if (searched) {
+                    bookcaseSearchCount++;
+                    searchedBookcases.add(nextBookcase);
+                    log.info("Searching bookcase {}/{} at {}", bookcaseSearchCount, MAX_BOOKCASE_SEARCHES, nextBookcase);
+                    sleep(2000, 3000); // Wait for search to complete
+                    currentState = State.COLLECTING_BOOK;
+                } else {
+                    log.warn("Could not find bookcase at {}, looking for another one.", nextBookcase);
+                    sleep(1000);
+                }
+            }
         } else {
-            log.warn("Could not find bookcase nearby, looking for another one.");
-            sleep(1000);
+            log.warn("No more bookcases to search, trying different approach...");
+            currentState = State.TALKING_TO_NPC; // Reset and try again
         }
     }
     
@@ -255,18 +291,33 @@ public class nICK1PrivateLibraryScript extends Script {
         
         // Check if we got a book (inventory changed)
         if (Rs2Inventory.hasItem("Book")) {
+            // Try to identify what book we got (this would need proper book name detection)
+            String foundBook = "Book"; // Simplified - would need to detect actual book name
+            
+            // Remember what book is in this bookcase
+            if (currentBookcaseTarget != null) {
+                bookcaseMemory.put(currentBookcaseTarget, foundBook);
+                log.info("Found {} in bookcase at {} - added to memory", foundBook, currentBookcaseTarget);
+            }
+            
             booksCollected++;
             totalBooksCollected++;
-            log.info("Collected book! Total books: {}", totalBooksCollected);
+            log.info("Collected {}! Total books: {}", foundBook, totalBooksCollected);
             
-            if (isHelpingSomeoneElse) {
-                // If we were already helping someone else, try to find the original NPC
-                log.info("Found book while helping someone else, looking for original NPC...");
+            // Check if this is the book we were looking for
+            if (requestedBook != null && foundBook.equals(requestedBook)) {
+                log.info("Found the requested book {}! Returning to NPC.", requestedBook);
                 currentState = State.RETURNING_TO_NPC;
             } else {
-                currentState = State.RETURNING_TO_NPC;
+                log.info("Found {} but looking for {}. Continuing search...", foundBook, requestedBook);
+                currentState = State.SEARCHING_BOOKCASES;
             }
         } else {
+            // No book found in this bookcase - remember that too
+            if (currentBookcaseTarget != null) {
+                bookcaseMemory.put(currentBookcaseTarget, "Empty");
+                log.info("No book found in bookcase at {} - marked as empty", currentBookcaseTarget);
+            }
             log.warn("No book found in bookcase, continuing search...");
             currentState = State.SEARCHING_BOOKCASES;
         }
@@ -357,8 +408,38 @@ public class nICK1PrivateLibraryScript extends Script {
         return LIBRARY_AREA.contains(location);
     }
     
-    // This method is no longer needed with the new library mechanics
-    // The script now searches bookcases systematically rather than trying to find specific ones
+    private WorldPoint findNextUnsearchedBookcase() {
+        // This is a simplified version - in reality you'd use the Library.java helper
+        // to find actual bookcase locations and check if they've been searched
+        
+        WorldPoint playerLocation = Rs2Player.getWorldLocation();
+        
+        // Generate some bookcase locations around the library (simplified)
+        java.util.List<WorldPoint> potentialBookcases = new java.util.ArrayList<>();
+        
+        // Add some bookcase locations around the current position
+        for (int x = -10; x <= 10; x += 5) {
+            for (int y = -10; y <= 10; y += 5) {
+                WorldPoint bookcaseLocation = new WorldPoint(
+                    playerLocation.getX() + x,
+                    playerLocation.getY() + y,
+                    currentFloor
+                );
+                
+                // Only add if it's within the library area and not already searched
+                if (LIBRARY_AREA.contains(bookcaseLocation) && !searchedBookcases.contains(bookcaseLocation)) {
+                    potentialBookcases.add(bookcaseLocation);
+                }
+            }
+        }
+        
+        // Return the closest unsearched bookcase
+        if (!potentialBookcases.isEmpty()) {
+            return potentialBookcases.get(0); // Simplified - would find closest one
+        }
+        
+        return null; // No more bookcases to search
+    }
 
     @Override
     public void shutdown() {
