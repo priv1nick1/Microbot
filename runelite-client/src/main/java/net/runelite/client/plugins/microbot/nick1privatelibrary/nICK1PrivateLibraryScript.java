@@ -55,9 +55,11 @@ public class nICK1PrivateLibraryScript extends Script {
     
     // Library mechanics tracking
     private String requestedBook = null;
+    private String currentNPC = null; // Sam, Professor Gracklebone, or Villia
     private WorldPoint npcLocation = null;
     private int bookcaseSearchCount = 0;
     private static final int MAX_BOOKCASE_SEARCHES = 50; // Prevent infinite searching
+    private boolean hasSpokenToBiblia = false; // Track if we've gotten location hints
 
     public boolean run(nICK1PrivateLibraryConfig config) {
         Microbot.enableAutoRunOn = true;
@@ -158,21 +160,30 @@ public class nICK1PrivateLibraryScript extends Script {
         currentStatus = "Talking to NPC...";
         log.info(currentStatus);
         
-        // Find library NPC (usually near the entrance)
-        WorldPoint playerLocation = Rs2Player.getWorldLocation();
-        WorldPoint npcLocation = new WorldPoint(1632, 3808, 0); // Approximate NPC location
+        // Try to find one of the three NPCs: Sam, Professor Gracklebone, or Villia
+        String[] npcNames = {"Sam", "Professor Gracklebone", "Villia"};
+        String targetNPC = null;
         
-        // Walk to NPC if not close
-        if (playerLocation.distanceTo(npcLocation) > 3) {
-            Rs2Walker.walkTo(npcLocation, 3);
+        // Try to find an available NPC
+        for (String npcName : npcNames) {
+            if (Rs2Npc.getNpc(npcName) != null) {
+                targetNPC = npcName;
+                currentNPC = npcName;
+                break;
+            }
+        }
+        
+        if (targetNPC == null) {
+            log.warn("No available NPCs found, waiting...");
+            sleep(3000);
             return;
         }
         
-        // Try to interact with NPC
-        boolean talked = Rs2Npc.interact("Librarian", "Talk-to");
+        // Try to interact with the found NPC
+        boolean talked = Rs2Npc.interact(targetNPC, "Talk-to");
         
         if (talked) {
-            log.info("Talking to librarian...");
+            log.info("Talking to {}...", targetNPC);
             sleep(2000, 3000); // Wait for dialogue
             
             // Check if we got a book request from dialogue
@@ -181,12 +192,18 @@ public class nICK1PrivateLibraryScript extends Script {
                 if (dialogueText != null && dialogueText.contains("book")) {
                     // Extract book name from dialogue (simplified)
                     requestedBook = "Book"; // This would need proper parsing
-                    log.info("Got book request: {}", requestedBook);
-                    currentState = State.SEARCHING_BOOKCASES;
+                    log.info("Got book request from {}: {}", targetNPC, requestedBook);
+                    
+                    // After getting book request, talk to Biblia for location hints
+                    if (!hasSpokenToBiblia) {
+                        currentState = State.SEARCHING_BOOKCASES; // Skip Biblia for now, implement later
+                    } else {
+                        currentState = State.SEARCHING_BOOKCASES;
+                    }
                 }
             }
         } else {
-            log.warn("Could not find librarian, retrying...");
+            log.warn("Could not find {}, retrying...", targetNPC);
             sleep(2000);
         }
     }
@@ -234,82 +251,61 @@ public class nICK1PrivateLibraryScript extends Script {
     }
     
     private void handleReturningToNPC() {
-        currentStatus = "Returning to NPC...";
+        currentStatus = "Returning to " + (currentNPC != null ? currentNPC : "NPC") + "...";
         log.info(currentStatus);
         
-        // Walk back to NPC location
-        WorldPoint npcLocation = new WorldPoint(1632, 3808, 0);
-        Rs2Walker.walkTo(npcLocation, 3);
-        
-        // Check if we're close enough to NPC
-        WorldPoint playerLocation = Rs2Player.getWorldLocation();
-        if (playerLocation.distanceTo(npcLocation) <= 3) {
-            currentState = State.DELIVERING_BOOK;
+        // Find the NPC we originally talked to
+        if (currentNPC != null && Rs2Npc.getNpc(currentNPC) != null) {
+            // NPC is still available, walk to them
+            Rs2Walker.walkTo(Rs2Npc.getNpc(currentNPC).getWorldLocation(), 3);
+            
+            // Check if we're close enough to NPC
+            WorldPoint playerLocation = Rs2Player.getWorldLocation();
+            WorldPoint npcLocation = Rs2Npc.getNpc(currentNPC).getWorldLocation();
+            if (playerLocation.distanceTo(npcLocation) <= 3) {
+                currentState = State.DELIVERING_BOOK;
+            }
+        } else {
+            log.warn("Original NPC {} not found, looking for any available NPC...", currentNPC);
+            currentState = State.TALKING_TO_NPC; // Find a new NPC
         }
     }
     
     private void handleDeliveringBook() {
-        currentStatus = "Delivering book...";
+        currentStatus = "Delivering book to " + (currentNPC != null ? currentNPC : "NPC") + "...";
         log.info(currentStatus);
         
-        // Try to interact with NPC to deliver book
-        boolean talked = Rs2Npc.interact("Librarian", "Talk-to");
-        
-        if (talked) {
-            log.info("Delivering book to librarian...");
-            sleep(2000, 3000); // Wait for dialogue
+        // Try to interact with the original NPC to deliver book
+        if (currentNPC != null) {
+            boolean talked = Rs2Npc.interact(currentNPC, "Talk-to");
             
-            // Check if book was delivered (inventory should be empty of books)
-            if (!Rs2Inventory.hasItem("Book")) {
-                log.info("Book delivered successfully!");
-                requestedBook = null; // Reset for next book
-                bookcaseSearchCount = 0; // Reset search counter
-                currentState = State.TALKING_TO_NPC; // Get next book request
+            if (talked) {
+                log.info("Delivering book to {}...", currentNPC);
+                sleep(2000, 3000); // Wait for dialogue
+                
+                // Check if book was delivered (inventory should be empty of books)
+                if (!Rs2Inventory.hasItem("Book")) {
+                    log.info("Book delivered successfully to {}!", currentNPC);
+                    requestedBook = null; // Reset for next book
+                    bookcaseSearchCount = 0; // Reset search counter
+                    currentNPC = null; // Reset NPC
+                    currentState = State.TALKING_TO_NPC; // Get next book request
+                }
+            } else {
+                log.warn("Could not find {} to deliver book, retrying...", currentNPC);
+                sleep(2000);
             }
         } else {
-            log.warn("Could not find librarian to deliver book, retrying...");
-            sleep(2000);
+            log.warn("No NPC to deliver to, finding new NPC...");
+            currentState = State.TALKING_TO_NPC;
         }
     }
     
     private void handleBanking() {
-        currentStatus = "Banking books...";
-        log.info(currentStatus);
-        
-        // FALLBACK CHECK: If we've failed too many times, try to continue anyway
-        if (bankingFailCount >= MAX_BANKING_FAILS) {
-            log.warn("Banking failed {} times. Continuing with collection...", bankingFailCount);
-            currentState = State.CHECKING_INVENTORY;
-            bankingFailCount = 0;
-            return;
-        }
-        
-        // Open nearest bank
-        if (!Rs2Bank.isOpen()) {
-            boolean bankOpened = Rs2Bank.openBank();
-            if (!bankOpened) {
-                bankingFailCount++;
-                log.warn("Failed to open bank (attempt {}/{}), retrying...", bankingFailCount, MAX_BANKING_FAILS);
-                return;
-            }
-            sleepUntil(Rs2Bank::isOpen, 5000);
-        }
-        
-        if (Rs2Bank.isOpen()) {
-            // Reset fail counter since we successfully opened bank
-            bankingFailCount = 0;
-            
-            // Deposit all books
-            Rs2Bank.depositAll("Book");
-            sleep(600);
-            
-            // Close bank
-            Rs2Bank.closeBank();
-            sleep(600);
-            
-            log.info("Books deposited! Continuing with library tasks.");
-            currentState = State.TALKING_TO_NPC;
-        }
+        // Books cannot be banked according to the wiki
+        // This state should not be reached in normal operation
+        log.warn("Banking state reached - books cannot be banked! Returning to NPC.");
+        currentState = State.TALKING_TO_NPC;
     }
     
     private boolean isInLibrary(WorldPoint location) {

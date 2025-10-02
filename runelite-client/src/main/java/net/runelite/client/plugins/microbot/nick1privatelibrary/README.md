@@ -1,25 +1,28 @@
 # nICK1 Private Library
 
 ## Overview
-Private Arc Library book collector for nICK1. Automatically collects magic exp books from the Kourend Library!
+Private Arc Library book collector for nICK1. Automatically collects magic exp books from the Arceuus Library following the proper mechanics!
 
 ## Features
 
-### Smart Book Collection
-- **Automatic bookcase detection** - Finds and searches bookcases
+### Proper Library Mechanics
+- **NPC Interaction** - Talks to Sam, Professor Gracklebone, or Villia for book requests
+- **Book Search** - Systematically searches bookcases for requested books
+- **Book Delivery** - Returns books to the original NPC for Magic XP
 - **Multi-floor navigation** - Handles ground, first, and second floors
-- **Inventory management** - Banks books when inventory is full
-- **Smart pathing** - Efficient movement between bookcases
+- **Smart pathing** - Efficient movement between NPCs and bookcases
 
 ### Required Equipment
-- **Coins** (for traveling)
-- **Access to Kourend Library** (requires 100% Arceuus favor)
+- **Access to Arceuus Library** (requires 100% Arceuus favor)
+- **Graceful outfit recommended** (for weight reduction)
+- **Stamina potions** (optional, for faster movement)
 
 ### Smart Features
-- **Auto-banking** - Deposits books when inventory is full
-- **Floor switching** - Automatically checks all floors for bookcases
+- **NPC tracking** - Remembers which NPC gave the request
+- **Book location hints** - Can use Biblia for location hints (future feature)
 - **Error recovery** - Handles failed interactions gracefully
 - **Stats tracking** - Shows books collected, XP gained, time running
+- **Magic XP rewards** - Books give 15x Magic level XP when delivered
 
 ## Stats Overlay
 
