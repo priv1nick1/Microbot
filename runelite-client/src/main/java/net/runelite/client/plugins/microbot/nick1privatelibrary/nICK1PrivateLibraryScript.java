@@ -7,8 +7,10 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 // import net.runelite.client.plugins.kourendlibrary.Library;
@@ -36,10 +38,11 @@ public class nICK1PrivateLibraryScript extends Script {
     
     // State tracking
     private enum State {
-        CHECKING_INVENTORY,
-        WALKING_TO_BOOKCASE,
-        SEARCHING_BOOKCASE,
+        TALKING_TO_NPC,
+        SEARCHING_BOOKCASES,
         COLLECTING_BOOK,
+        RETURNING_TO_NPC,
+        DELIVERING_BOOK,
         BANKING,
         WALKING_TO_LIBRARY
     }
@@ -49,6 +52,12 @@ public class nICK1PrivateLibraryScript extends Script {
     private int currentFloor = 0; // 0=ground, 1=first, 2=second
     private int bankingFailCount = 0;
     private static final int MAX_BANKING_FAILS = 5;
+    
+    // Library mechanics tracking
+    private String requestedBook = null;
+    private WorldPoint npcLocation = null;
+    private int bookcaseSearchCount = 0;
+    private static final int MAX_BOOKCASE_SEARCHES = 50; // Prevent infinite searching
 
     public boolean run(nICK1PrivateLibraryConfig config) {
         Microbot.enableAutoRunOn = true;
@@ -94,20 +103,24 @@ public class nICK1PrivateLibraryScript extends Script {
                         handleWalkingToLibrary();
                         break;
                         
-                    case CHECKING_INVENTORY:
-                        handleInventoryCheck();
+                    case TALKING_TO_NPC:
+                        handleTalkingToNPC();
                         break;
                         
-                    case WALKING_TO_BOOKCASE:
-                        handleWalkingToBookcase();
-                        break;
-                        
-                    case SEARCHING_BOOKCASE:
-                        handleSearchingBookcase();
+                    case SEARCHING_BOOKCASES:
+                        handleSearchingBookcases();
                         break;
                         
                     case COLLECTING_BOOK:
                         handleCollectingBook();
+                        break;
+                        
+                    case RETURNING_TO_NPC:
+                        handleReturningToNPC();
+                        break;
+                        
+                    case DELIVERING_BOOK:
+                        handleDeliveringBook();
                         break;
                         
                     case BANKING:
@@ -132,8 +145,8 @@ public class nICK1PrivateLibraryScript extends Script {
         
         // Check if we're already in the library
         if (isInLibrary(playerLocation)) {
-            log.info("Already in library! Starting book collection.");
-            currentState = State.CHECKING_INVENTORY;
+            log.info("Already in library! Starting to talk to NPC.");
+            currentState = State.TALKING_TO_NPC;
         } else {
             // Walk to library entrance
             Rs2Walker.walkTo(LIBRARY_ENTRANCE, 5);
@@ -141,58 +154,66 @@ public class nICK1PrivateLibraryScript extends Script {
         }
     }
     
-    private void handleInventoryCheck() {
-        currentStatus = "Checking inventory...";
+    private void handleTalkingToNPC() {
+        currentStatus = "Talking to NPC...";
         log.info(currentStatus);
         
-        // Check if inventory is full
-        if (Rs2Inventory.isFull()) {
-            log.info("Inventory full, going to bank.");
-            currentState = State.BANKING;
-        } else {
-            log.info("Inventory has space, looking for bookcases.");
-            currentState = State.WALKING_TO_BOOKCASE;
+        // Find library NPC (usually near the entrance)
+        WorldPoint playerLocation = Rs2Player.getWorldLocation();
+        WorldPoint npcLocation = new WorldPoint(1632, 3808, 0); // Approximate NPC location
+        
+        // Walk to NPC if not close
+        if (playerLocation.distanceTo(npcLocation) > 3) {
+            Rs2Walker.walkTo(npcLocation, 3);
+            return;
         }
-    }
-    
-    private void handleWalkingToBookcase() {
-        currentStatus = "Looking for bookcases...";
-        log.info(currentStatus);
         
-        // Find the nearest available bookcase
-        WorldPoint nearestBookcase = findNearestBookcase();
+        // Try to interact with NPC
+        boolean talked = Rs2Npc.interact("Librarian", "Talk-to");
         
-        if (nearestBookcase != null) {
-            log.info("Found bookcase at: {}", nearestBookcase);
-            Rs2Walker.walkTo(nearestBookcase, 3);
-            currentState = State.SEARCHING_BOOKCASE;
-        } else {
-            log.warn("No bookcases found, checking other floors...");
-            // Try different floor
-            if (currentFloor < 2) {
-                currentFloor++;
-                log.info("Trying floor {}", currentFloor);
-            } else {
-                log.warn("No bookcases found on any floor, waiting...");
-                sleep(5000);
+        if (talked) {
+            log.info("Talking to librarian...");
+            sleep(2000, 3000); // Wait for dialogue
+            
+            // Check if we got a book request from dialogue
+            if (Rs2Dialogue.isInDialogue()) {
+                String dialogueText = Rs2Dialogue.getDialogueText();
+                if (dialogueText != null && dialogueText.contains("book")) {
+                    // Extract book name from dialogue (simplified)
+                    requestedBook = "Book"; // This would need proper parsing
+                    log.info("Got book request: {}", requestedBook);
+                    currentState = State.SEARCHING_BOOKCASES;
+                }
             }
+        } else {
+            log.warn("Could not find librarian, retrying...");
+            sleep(2000);
         }
     }
     
-    private void handleSearchingBookcase() {
-        currentStatus = "Searching bookcase...";
+    private void handleSearchingBookcases() {
+        currentStatus = "Searching for " + (requestedBook != null ? requestedBook : "book") + "...";
         log.info(currentStatus);
         
-        // Try to interact with bookcase
+        // Check if we've searched too many bookcases
+        if (bookcaseSearchCount >= MAX_BOOKCASE_SEARCHES) {
+            log.warn("Searched too many bookcases, trying different approach...");
+            bookcaseSearchCount = 0;
+            currentState = State.TALKING_TO_NPC; // Reset and try again
+            return;
+        }
+        
+        // Find and search a bookcase
         boolean searched = Rs2GameObject.interact("Bookcase", "Search");
         
         if (searched) {
-            log.info("Searching bookcase...");
+            bookcaseSearchCount++;
+            log.info("Searching bookcase {}/{}...", bookcaseSearchCount, MAX_BOOKCASE_SEARCHES);
             sleep(2000, 3000); // Wait for search to complete
             currentState = State.COLLECTING_BOOK;
         } else {
             log.warn("Could not find bookcase nearby, looking for another one.");
-            currentState = State.WALKING_TO_BOOKCASE;
+            sleep(1000);
         }
     }
     
@@ -205,10 +226,49 @@ public class nICK1PrivateLibraryScript extends Script {
             booksCollected++;
             totalBooksCollected++;
             log.info("Collected book! Total books: {}", totalBooksCollected);
-            currentState = State.CHECKING_INVENTORY;
+            currentState = State.RETURNING_TO_NPC;
         } else {
-            log.warn("No book found in bookcase, looking for another one.");
-            currentState = State.WALKING_TO_BOOKCASE;
+            log.warn("No book found in bookcase, continuing search...");
+            currentState = State.SEARCHING_BOOKCASES;
+        }
+    }
+    
+    private void handleReturningToNPC() {
+        currentStatus = "Returning to NPC...";
+        log.info(currentStatus);
+        
+        // Walk back to NPC location
+        WorldPoint npcLocation = new WorldPoint(1632, 3808, 0);
+        Rs2Walker.walkTo(npcLocation, 3);
+        
+        // Check if we're close enough to NPC
+        WorldPoint playerLocation = Rs2Player.getWorldLocation();
+        if (playerLocation.distanceTo(npcLocation) <= 3) {
+            currentState = State.DELIVERING_BOOK;
+        }
+    }
+    
+    private void handleDeliveringBook() {
+        currentStatus = "Delivering book...";
+        log.info(currentStatus);
+        
+        // Try to interact with NPC to deliver book
+        boolean talked = Rs2Npc.interact("Librarian", "Talk-to");
+        
+        if (talked) {
+            log.info("Delivering book to librarian...");
+            sleep(2000, 3000); // Wait for dialogue
+            
+            // Check if book was delivered (inventory should be empty of books)
+            if (!Rs2Inventory.hasItem("Book")) {
+                log.info("Book delivered successfully!");
+                requestedBook = null; // Reset for next book
+                bookcaseSearchCount = 0; // Reset search counter
+                currentState = State.TALKING_TO_NPC; // Get next book request
+            }
+        } else {
+            log.warn("Could not find librarian to deliver book, retrying...");
+            sleep(2000);
         }
     }
     
@@ -247,8 +307,8 @@ public class nICK1PrivateLibraryScript extends Script {
             Rs2Bank.closeBank();
             sleep(600);
             
-            log.info("Books deposited! Continuing collection.");
-            currentState = State.CHECKING_INVENTORY;
+            log.info("Books deposited! Continuing with library tasks.");
+            currentState = State.TALKING_TO_NPC;
         }
     }
     
@@ -257,20 +317,8 @@ public class nICK1PrivateLibraryScript extends Script {
         return LIBRARY_AREA.contains(location);
     }
     
-    private WorldPoint findNearestBookcase() {
-        // This is a simplified version - in reality you'd use the Library.java helper
-        // to find actual bookcase locations and check if they have books
-        
-        WorldPoint playerLocation = Rs2Player.getWorldLocation();
-        
-        // For now, just return a nearby location to test
-        // In a real implementation, you'd query the Library class for bookcase locations
-        return new WorldPoint(
-            playerLocation.getX() + (int)(Math.random() * 10 - 5),
-            playerLocation.getY() + (int)(Math.random() * 10 - 5),
-            currentFloor
-        );
-    }
+    // This method is no longer needed with the new library mechanics
+    // The script now searches bookcases systematically rather than trying to find specific ones
 
     @Override
     public void shutdown() {
