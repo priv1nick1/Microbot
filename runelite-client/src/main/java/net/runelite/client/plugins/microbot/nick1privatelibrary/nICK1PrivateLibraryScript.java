@@ -60,6 +60,7 @@ public class nICK1PrivateLibraryScript extends Script {
     private int bookcaseSearchCount = 0;
     private static final int MAX_BOOKCASE_SEARCHES = 50; // Prevent infinite searching
     private boolean hasSpokenToBiblia = false; // Track if we've gotten location hints
+    private boolean isHelpingSomeoneElse = false; // Track if we're already helping another NPC
 
     public boolean run(nICK1PrivateLibraryConfig config) {
         Microbot.enableAutoRunOn = true;
@@ -189,16 +190,30 @@ public class nICK1PrivateLibraryScript extends Script {
             // Check if we got a book request from dialogue
             if (Rs2Dialogue.isInDialogue()) {
                 String dialogueText = Rs2Dialogue.getDialogueText();
-                if (dialogueText != null && dialogueText.contains("book")) {
-                    // Extract book name from dialogue (simplified)
-                    requestedBook = "Book"; // This would need proper parsing
-                    log.info("Got book request from {}: {}", targetNPC, requestedBook);
+                if (dialogueText != null) {
+                    // Check if we're already helping someone else
+                    if (dialogueText.contains("I'll grab you later when you're not busy helping someone else") ||
+                        dialogueText.contains("helping someone else") ||
+                        dialogueText.contains("not busy")) {
+                        log.info("Already helping someone else! Need to complete current task first.");
+                        isHelpingSomeoneElse = true;
+                        currentStatus = "Already helping someone else - completing current task...";
+                        currentState = State.SEARCHING_BOOKCASES; // Try to find and complete current book
+                        return;
+                    }
                     
-                    // After getting book request, talk to Biblia for location hints
-                    if (!hasSpokenToBiblia) {
-                        currentState = State.SEARCHING_BOOKCASES; // Skip Biblia for now, implement later
-                    } else {
-                        currentState = State.SEARCHING_BOOKCASES;
+                    // Check if we got a book request
+                    if (dialogueText.contains("book")) {
+                        // Extract book name from dialogue (simplified)
+                        requestedBook = "Book"; // This would need proper parsing
+                        log.info("Got book request from {}: {}", targetNPC, requestedBook);
+                        
+                        // After getting book request, talk to Biblia for location hints
+                        if (!hasSpokenToBiblia) {
+                            currentState = State.SEARCHING_BOOKCASES; // Skip Biblia for now, implement later
+                        } else {
+                            currentState = State.SEARCHING_BOOKCASES;
+                        }
                     }
                 }
             }
@@ -243,7 +258,14 @@ public class nICK1PrivateLibraryScript extends Script {
             booksCollected++;
             totalBooksCollected++;
             log.info("Collected book! Total books: {}", totalBooksCollected);
-            currentState = State.RETURNING_TO_NPC;
+            
+            if (isHelpingSomeoneElse) {
+                // If we were already helping someone else, try to find the original NPC
+                log.info("Found book while helping someone else, looking for original NPC...");
+                currentState = State.RETURNING_TO_NPC;
+            } else {
+                currentState = State.RETURNING_TO_NPC;
+            }
         } else {
             log.warn("No book found in bookcase, continuing search...");
             currentState = State.SEARCHING_BOOKCASES;
@@ -251,6 +273,27 @@ public class nICK1PrivateLibraryScript extends Script {
     }
     
     private void handleReturningToNPC() {
+        if (isHelpingSomeoneElse && currentNPC == null) {
+            // We don't know which NPC we're helping, try to find any available NPC
+            currentStatus = "Looking for NPC to deliver book...";
+            log.info(currentStatus);
+            
+            String[] npcNames = {"Sam", "Professor Gracklebone", "Villia"};
+            for (String npcName : npcNames) {
+                if (Rs2Npc.getNpc(npcName) != null) {
+                    currentNPC = npcName;
+                    log.info("Found {} to deliver book to", npcName);
+                    break;
+                }
+            }
+            
+            if (currentNPC == null) {
+                log.warn("No NPCs found, waiting...");
+                sleep(3000);
+                return;
+            }
+        }
+        
         currentStatus = "Returning to " + (currentNPC != null ? currentNPC : "NPC") + "...";
         log.info(currentStatus);
         
@@ -288,6 +331,7 @@ public class nICK1PrivateLibraryScript extends Script {
                     log.info("Book delivered successfully to {}!", currentNPC);
                     requestedBook = null; // Reset for next book
                     bookcaseSearchCount = 0; // Reset search counter
+                    isHelpingSomeoneElse = false; // Reset helping flag
                     currentNPC = null; // Reset NPC
                     currentState = State.TALKING_TO_NPC; // Get next book request
                 }
